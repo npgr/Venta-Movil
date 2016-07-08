@@ -9,8 +9,11 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 -->
 
 <link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/iron-icons/iron-icons.html">
 <link rel="import" href="../bower_components/paper-input/paper-input.html">
 <link rel="import" href="../bower_components/paper-fab/paper-fab.html">
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../bower_components/iron-collapse/iron-collapse.html">
 
 <dom-module id="my-view1">
 
@@ -45,12 +48,71 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         margin: 16px 0;
         color: #212121;
       }
+	  #header_line {
+		display: inline-block;
+		margin-left: 30px;
+	  }
+	  #prod_src {
+		margin-left: 12px;
+		width: 8em;
+	  }
+	  paper-fab {
+		background-color: rgb(128, 128, 255);
+		color: white;
+	  }
+	  #loc-button {
+		background-color: rgb(128, 128, 255);
+		color: white;
+		//position: absolute;
+		border-radius: 50%;
+		min-width: 0px;
+		padding:2px;
+		//top:12px;
+		//left: 150px;
+      }
+	  /*#find-button {
+		position: absolute;
+		top:12px;
+		left: 225px;
+      }*/
+	  .row {
+		margin: 3px 5px 0px 5px;
+		padding: 5px;
+		background-color: white;
+	  }
+	  .desc {
+		opacity: .87;
+	  }
+	  .existencia {
+		color:green;
+		opacity:.7;
+	  }
+	  .precio {
+		opacity: .54;
+	  }
+	  #search {
+		background-color:#C8E6C9;
+	  }
     </style>
-
-	<paper-input label="Producto"></paper-input>
-	<paper-fab icon="add" mini></paper-fab>
-
-    <div class="card">
+	<!--<iron-collapse flex id="search">-->
+	<div id="header_line">
+		<paper-input id="prod_src" floatinglabel label="Producto"></paper-input>
+		<!--<paper-button mini id="loc-button" on-click="{{change_loc}}">{{loc}}</paper-button>-->
+		<paper-button mini id="loc-button" on-click="{{change_loc}}">{{loc}}</paper-button>
+		<paper-fab mini id="find-button" icon="arrow-forward" on-click="{{find}}"></paper-fab>
+	</div>
+	<!--</iron-collapse>-->
+	
+	<template is="dom-repeat" items="{{prod_data}}">
+		<div class="card">
+			<strong class="desc">{{item.descripcion}}</strong>
+			<br>
+			<strong class="existencia">({{item.existencia}} Unds)</strong>
+			<small class="precio" valor={{it.precio}}>Precio: {{item.precio}}</small>
+		</div>
+	</template>
+    
+	<div class="card">
       <div class="circle">1</div>
       <h1>View One</h1>
       <p>Ut labores minimum atomorum pro. Laudem tibique ut has.
@@ -63,10 +125,31 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
     Polymer({
 
-      is: 'my-view1'
+      is: 'my-view1',
+	  ready: function() {
+		this.loc = "CDA"
+		this.prod_data = [
+			{descripcion: "AMPICILINA CLX SUSP 125MGX60ML", existencia: 126, precio: 127.5.toLocaleString() },
+			//.toFixed(2)
+			{descripcion: "BRANE 200MG PVO SOL ORAL X10 SOB", existencia: 32, precio: 22.60.toLocaleString() },
+			{descripcion: "MANIDON TAB 40MGX50", existencia: 1230, precio: 1854.45.toLocaleString() }
+		]
+	  },
+	  change_loc: function() {
+	  
+	  },
+	  find: function() {
+	  
+	  }
 
     });
-
+	/*PolymerExpressions.prototype.formatMoney = function (value) {
+	    if (!value) {
+	        return '';
+	    } else {
+	        return value.toLocaleString();
+	    }
+	};*/
   </script>
 
 </dom-module>
