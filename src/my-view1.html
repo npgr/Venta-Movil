@@ -97,13 +97,13 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 	<!--<iron-collapse flex id="search">-->
 	<div id="header_line">
 		<paper-input id="prod_src" floatinglabel label="Producto"></paper-input>
-		<!--<paper-button mini id="loc-button" on-click="{{change_loc}}">{{loc}}</paper-button>-->
-		<paper-button mini id="loc-button" on-click="{{change_loc}}">{{loc}}</paper-button>
-		<paper-fab mini id="find-button" icon="arrow-forward" on-click="{{find}}"></paper-fab>
+		<!--<paper-button mini id="loc-button" on-click="change_loc">{{loc}}</paper-button>-->
+		<paper-button mini id="loc-button" on-click="change_loc">{{loc}}</paper-button>
+		<paper-fab mini id="find-button" icon="arrow-forward" on-click="find"></paper-fab>
 	</div>
 	<!--</iron-collapse>-->
 	
-	<template is="dom-repeat" items="{{prod_data}}">
+	<template is="dom-repeat" items="{{filtered_data}}">
 		<div class="card">
 			<strong class="desc">{{item.descripcion}}</strong>
 			<br>
@@ -128,18 +128,31 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       is: 'my-view1',
 	  ready: function() {
 		this.loc = "CDA"
-		this.prod_data = [
+		/** Cargar this.data **/
+		/*this.data = [
 			{descripcion: "AMPICILINA CLX SUSP 125MGX60ML", existencia: 126, precio: 127.5.toLocaleString() },
 			//.toFixed(2)
 			{descripcion: "BRANE 200MG PVO SOL ORAL X10 SOB", existencia: 32, precio: 22.60.toLocaleString() },
 			{descripcion: "MANIDON TAB 40MGX50", existencia: 1230, precio: 1854.45.toLocaleString() }
 		]
+		localStorage["prod_data"] = JSON.stringify(this.data);*/
+		this.data = JSON.parse(localStorage["prod_data"])
+		this.filtered_data = this.data
 	  },
 	  change_loc: function() {
 	  
 	  },
 	  find: function() {
-	  
+		if (this.$.prod_src.value.length >= 3)
+		{
+			this.filtered_data=[]
+			for (i=0; i<this.data.length; i++)
+			{
+				
+			}
+		}
+		else
+			alert("El Filtro debe tener al menos 3 caracteres")
 	  }
 
     });
