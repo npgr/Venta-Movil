@@ -27,7 +27,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       .card {
         box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12), 0 3px 1px -2px rgba(0, 0, 0, 0.2);
         padding: 16px;
-        margin: 24px;
+        margin: 15px;
         border-radius: 5px;
         background-color: #fff;
         color: #757575;
@@ -103,7 +103,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 	</div>
 	<!--</iron-collapse>-->
 	
-	<template is="dom-repeat" items="{{filtered_data}}">
+	<template id="mytemplate" is="dom-repeat" items="{{filtered_data}}">
 		<div class="card">
 			<strong class="desc">{{item.descripcion}}</strong>
 			<br>
@@ -112,12 +112,12 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		</div>
 	</template>
     
-	<div class="card">
+	<!--<div class="card">
       <div class="circle">1</div>
       <h1>View One</h1>
       <p>Ut labores minimum atomorum pro. Laudem tibique ut has.
       <p>Lorem ipsum dolor sit amet, per in nusquam nominavi periculis, sit elit oportere ea.Lorem ipsum dolor sit amet, per in nusquam nominavi periculis, sit elit oportere ea.Cu mei vide viris gloriatur, at populo eripuit sit.</p>
-    </div>
+    </div>-->
 
   </template>
 
@@ -143,16 +143,18 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 	  
 	  },
 	  find: function() {
-		if (this.$.prod_src.value.length >= 3)
+		//if (this.$.prod_src.value.length >= 3)
 		{
 			this.filtered_data=[]
+			var filtered_d = []
 			for (i=0; i<this.data.length; i++)
-			{
-				
-			}
+				if (this.data[i].descripcion.toLowerCase().indexOf(this.$.prod_src.value.toLowerCase()) > -1)
+					filtered_d.push(this.data[i])
+			this.filtered_data = filtered_d
+			filtered_d = []
 		}
-		else
-			alert("El Filtro debe tener al menos 3 caracteres")
+		//else
+		//	alert("El Filtro debe tener al menos 3 caracteres")
 	  }
 
     });
