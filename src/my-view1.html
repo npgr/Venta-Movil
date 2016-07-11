@@ -99,7 +99,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		<paper-input id="prod_src" floatinglabel label="Producto"></paper-input>
 		<!--<paper-button mini id="loc-button" on-click="change_loc">{{loc}}</paper-button>-->
 		<paper-button mini id="loc-button" on-click="change_loc">{{loc}}</paper-button>
-		<paper-fab mini id="find-button" icon="arrow-forward" on-click="find"></paper-fab>
+		<paper-fab mini id="find-button" icon="arrow-forward" on-click="filter"></paper-fab>
+		
+		<paper-fab mini id="sync-button" icon="notification:sync" on-click="sync"></paper-fab>
 	</div>
 	<!--</iron-collapse>-->
 	
@@ -108,7 +110,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 			<strong class="desc">{{item.descripcion}}</strong>
 			<br>
 			<strong class="existencia">({{item.existencia}} Unds)</strong>
-			<small class="precio" valor={{it.precio}}>Precio: {{item.precio}}</small>
+			<small class="precio" valor={{item.precio}}>Precio: {{item.precio}}</small>
 		</div>
 	</template>
     
@@ -137,19 +139,26 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		]
 		localStorage["prod_data"] = JSON.stringify(this.data);*/
 		this.data = JSON.parse(localStorage["prod_data"])
-		this.filtered_data = this.data
+		//this.filtered_data = this.data
+		this.filter()
 	  },
 	  change_loc: function() {
-	  
+		if (this.loc == 'CDA') this.loc = 'CDG'
+		  else this.loc = 'CDA'
+		this.filter()
 	  },
-	  find: function() {
+	  filter: function() {
 		//if (this.$.prod_src.value.length >= 3)
 		{
 			this.filtered_data=[]
 			var filtered_d = []
 			for (i=0; i<this.data.length; i++)
 				if (this.data[i].descripcion.toLowerCase().indexOf(this.$.prod_src.value.toLowerCase()) > -1)
-					filtered_d.push(this.data[i])
+				{
+					if (this.loc == 'CDA') this.data[i].existencia = this.data[i].existencia_cda
+					if (this.loc == 'CDG') this.data[i].existencia = this.data[i].existencia_cdg
+					if (this.data[i].existencia != -1) filtered_d.push(this.data[i])
+				}
 			this.filtered_data = filtered_d
 			filtered_d = []
 		}

@@ -9,6 +9,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 -->
 
 <link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
 
 <dom-module id="my-view2">
 
@@ -43,13 +45,20 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         margin: 16px 0;
         color: #212121;
       }
+	  [green] {
+		color: green;
+	  }
     </style>
-
+	<iron-ajax id="ajax" method='POST' handle-as="json" on-response="load_data" on-error="ajax_error"></iron-ajax>
     <div class="card">
-      <div class="circle">2</div>
+	  <h1>Sincronizar Datos</h1>
+	  <paper-button on-click="sync">Cargar Productos</paper-button>
+	  <br>
+	  <strong green>{{msg}}</strong>
+      <!--<div class="circle">2</div>
       <h1>View Two</h1>
       <p>Ea duis bonorum nec, falli paulo aliquid ei eum.</p>
-      <p>Id nam odio natum malorum, tibique copiosae expetenda mel ea.Detracto suavitate repudiandae no eum. Id adhuc minim soluta nam.Id nam odio natum malorum, tibique copiosae expetenda mel ea.</p>
+      <p>Id nam odio natum malorum, tibique copiosae expetenda mel ea.Detracto suavitate repudiandae no eum. Id adhuc minim soluta nam.Id nam odio natum malorum, tibique copiosae expetenda mel ea.</p>-->
     </div>
 
   </template>
@@ -58,9 +67,30 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
     Polymer({
 
-      is: 'my-view2'
+      is: 'my-view2',
+	  
+	  ready: function() {
+		var config = JSON.parse(localStorage["config"])
+		this.$.ajax.url = config.url
+		this.msg = ' '
+		
+	  },
+	  sync: function() {
+		//this.$.ajax.headers= {"my-key": "v3nt4m0v1l.123"}
+		this.$.ajax.body = {"my-key": "v3nt4m0v1l.123"}
+		this.$.ajax.generateRequest()
+	  },
+	  load_data: function() {
+		localStorage["prod_data"] = JSON.stringify(this.$.ajax.lastResponse)
+		this.msg = 'Cargados '+this.$.ajax.lastResponse.length+' Registros'
+	  },
+	  ajax_error: function() {
+		console.log(this.$.ajax.lastError)
+		//alert("<%= lng('Error Processing Request: ')%>", this.$.ajax.lastError)
+		this.msg = 'Error Cargando Productos'
+	}
 
-    });
+   });
 
   </script>
 

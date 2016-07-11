@@ -9,6 +9,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 -->
 
 <link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/paper-input/paper-input.html">
 
 <dom-module id="my-view3">
 
@@ -45,20 +46,35 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       }
     </style>
 
-    <div class="card">
+    <!--<div class="card">
       <div class="circle">3</div>
       <h1>View Three</h1>
       <p>Modus commodo minimum eum te, vero utinam assueverit per eu.</p>
       <p>Ea duis bonorum nec, falli paulo aliquid ei eum.Has at minim mucius aliquam, est id tempor laoreet.Pro saepe pertinax ei, ad pri animal labores suscipiantur.</p>
-    </div>
-
+    </div>-->
+	<div class="card">
+		<h2>Configuración</h2>
+		<paper-input floatinglabel label="URL" value="{{config.url}}"></paper-input>
+		<br>
+	</div>
   </template>
 
   <script>
 
     Polymer({
 
-      is: 'my-view3'
+      is: 'my-view3',
+	  
+	  ready: function() {
+	  
+		this.config = JSON.parse(localStorage["config"])
+		
+		this.config = {
+			url: 'http://localhost:3000/proddata',
+		}
+		
+		localStorage["config"] = JSON.stringify(this.config)
+	  }
 
     });
 
