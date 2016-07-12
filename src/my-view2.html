@@ -72,17 +72,21 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 	  ready: function() {
 		var config = JSON.parse(localStorage["config"])
 		this.$.ajax.url = config.url
+		this.$.ajax.contentType="application/json"
 		this.msg = ' '
 		
 	  },
 	  sync: function() {
 		//this.$.ajax.headers= {"my-key": "v3nt4m0v1l.123"}
-		this.$.ajax.body = {"my-key": "v3nt4m0v1l.123"}
+		this.$.ajax.body = {"my_key": "v3nt4m0v1l.123"}
 		this.$.ajax.generateRequest()
 	  },
 	  load_data: function() {
 		localStorage["prod_data"] = JSON.stringify(this.$.ajax.lastResponse)
-		this.msg = 'Cargados '+this.$.ajax.lastResponse.length+' Registros'
+		if (this.$.ajax.lastResponse.err)
+			this.msg = this.$.ajax.lastResponse.err
+		else 
+			this.msg = 'Cargados '+this.$.ajax.lastResponse.length+' Registros'
 	  },
 	  ajax_error: function() {
 		console.log(this.$.ajax.lastError)
