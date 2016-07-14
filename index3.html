@@ -10150,6 +10150,7 @@ Custom property                  | Description                            | Defa
         position: {
           type: String,
           readOnly: true,
+          value: 'left',
           reflectToAttribute: true
         },
 
@@ -10172,7 +10173,7 @@ Custom property                  | Description                            | Defa
       },
 
       observers: [
-        'resetLayout(position, isAttached)',
+        'resetLayout(position)',
         '_resetPosition(align, isAttached)'
       ],
 
@@ -10189,6 +10190,9 @@ Custom property                  | Description                            | Defa
       _lastTabStop: null,
 
       ready: function() {
+        // Set the scroll direction so you can vertically scroll inside the drawer.
+        this.setScrollDirection('y');
+
         // Only transition the drawer after its first render (e.g. app-drawer-layout
         // may need to set the initial opened state which should not be transitioned).
         this._setTransitionDuration('0s');
@@ -10202,12 +10206,9 @@ Custom property                  | Description                            | Defa
           this._boundEscKeydownHandler = this._escKeydownHandler.bind(this);
           this._resetDrawerState();
 
+          this.listen(this, 'track', '_track');
           this.addEventListener('transitionend', this._transitionend.bind(this));
           this.addEventListener('keydown', this._tabKeydownHandler.bind(this))
-
-          // Only listen for horizontal track so you can vertically scroll inside the drawer.
-          this.listen(this, 'track', '_track');
-          this.setScrollDirection('y');
         });
       },
 
@@ -10246,13 +10247,16 @@ Custom property                  | Description                            | Defa
       },
 
       /**
-       * Resets the layout. The event fired is used by app-drawer-layout to position the
-       * content.
+       * Resets the layout. If you changed the size of app-header via CSS
+       * you can notify the changes by either firing the `iron-resize` event
+       * or calling `resetLayout` directly.
        *
        * @method resetLayout
        */
       resetLayout: function() {
-        this.fire('app-drawer-reset-layout');
+        this.debounce('_resetLayout', function() {
+          this.fire('app-drawer-reset-layout');
+        }, 1);
       },
 
       _isRTL: function() {
@@ -10651,7 +10655,7 @@ With an app-header-layout:
   <app-header-layout>
     <app-header>
       <app-toolbar>
-        <div main-title>App name</div>
+        <div title>App name</div>
       </app-toolbar>
     </app-header>
 
@@ -10672,7 +10676,7 @@ Add the `drawer-toggle` attribute to elements inside `app-drawer-layout` that to
     <app-header>
       <app-toolbar>
         <paper-icon-button icon="menu" drawer-toggle></paper-icon-button>
-        <div main-title>App name</div>
+        <div title>App name</div>
       </app-toolbar>
     </app-header>
 
@@ -10804,7 +10808,12 @@ Custom property                          | Description                          
 
       resetLayout: function() {
         this.debounce('_resetLayout', function() {
+          if (!this.isAttached) {
+            return;
+          }
+
           var drawer = this.drawer;
+          var drawerWidth = this.drawer.getWidth();
           var contentContainer = this.$.contentContainer;
 
           if (this.narrow) {
@@ -10817,7 +10826,6 @@ Custom property                          | Description                          
             drawer.opened = drawer.persistent = true;
             contentContainer.classList.remove('narrow');
 
-            var drawerWidth = this.drawer.getWidth();
             if (drawer.position == 'right') {
               contentContainer.style.marginLeft = '';
               contentContainer.style.marginRight = drawerWidth + 'px';
@@ -11688,7 +11696,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     Polymer.AppLayout.registerEffect('resize-title', {
       /** @this Polymer.AppLayout.ElementWithBackground */
       setUp: function setUp() {
-        var title = this._getDOMRef('mainTitle');
+        var title = this._getDOMRef('title');
         var condensedTitle = this._getDOMRef('condensedTitle');
 
         if (!condensedTitle) {
@@ -11696,7 +11704,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           return false;
         }
         if (!title) {
-          this._warn(this._logf('effects[resize-title]', 'undefined `main-title`'));
+          this._warn(this._logf('effects[resize-title]', 'undefined `title`'));
           return false;
         }
 
@@ -11837,7 +11845,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
      * @this Polymer.AppLayout.ElementWithBackground
      */
     setUp: function setUp(config) {
-      var title = this._getDOMRef('mainTitle');
+      var title = this._getDOMRef('title');
       var condensedTitle = this._getDOMRef('condensedTitle');
       var duration = config.duration || '0.2s';
       var fx = {};
@@ -11847,7 +11855,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         return false;
       }
       if (!title) {
-        this._warn(this._logf('effects[resize-snapped-title]', 'undefined `main-title`'));
+        this._warn(this._logf('effects[resize-snapped-title]', 'undefined `title`'));
         return false;
       }
 
@@ -11903,18 +11911,18 @@ if using `reveals`, the header slides back when scrolling back up. For example:
 ```html
 <app-header reveals>
   <app-toolbar>
-    <div main-title>App name</div>
+    <div title>App name</div>
   </app-toolbar>
 </app-header>
 ```
 
 app-header can also condense when scrolling down. To achieve this behavior, the header
-must have a larger height than the `sticky` element in the light DOM. For example:
+must have a larger height than the `primary` element in the light DOM. For example:
 
 ```html
 <app-header style="height: 96px;" condenses fixed>
   <app-toolbar style="height: 64px;">
-    <div main-title>App name</div>
+    <div title>App name</div>
   </app-toolbar>
 </app-header>
 ```
@@ -11922,27 +11930,27 @@ must have a larger height than the `sticky` element in the light DOM. For exampl
 In this case the header is initially `96px` tall, and it shrinks to `64px` when scrolling down.
 That is what is meant by "condensing".
 
-### Sticky element
+### Primary element
 
-The element that is positioned fixed to top of the header's `scrollTarget` when a threshold
-is reached, similar to `position: sticky` in CSS. This element **must** be an immediate
-child of app-header. By default, the `sticky` element is the first `app-toolbar that
-is an immediate child of app-header.
+As the header condenses, the immediate children of app-header are stacked up.
+In this case, the primary element is the immediate child that would always stayed above
+the others as the header condenses. By default, the `primary` element is the first app-toolbar
+that is an immediate children of app-header.
 
 ```html
 <app-header condenses>
-  <app-toolbar> Sticky element </app-toolbar>
+  <app-toolbar> Primary element </app-toolbar>
 </app-header>
 ```
-
-#### Customizing the sticky element
 
 ```html
 <app-header condenses>
   <app-toolbar></app-toolbar>
-  <app-toolbar sticky> Sticky element </app-toolbar>
+  <app-toolbar primary> Primary element </app-toolbar>
 </app-header>
 ```
+
+The primary element must be a direct child of app-header.
 
 ### Scroll target
 
@@ -12034,7 +12042,7 @@ This value can be assigned via the `scalar` config value and it is typically a v
 between 0 and 1 inclusive. If `scalar=0`, the background doesn't move away from the header.
 
 * **resize-title**
-Progressively interpolates the size of the title from the element with the `main-title` attribute
+Progressively interpolates the size of the title from the element with the `title` attribute
 to the element with the `condensed-title` attribute as the header condenses. For example:
 
 ```html
@@ -12043,14 +12051,14 @@ to the element with the `condensed-title` attribute as the header condenses. For
       <h4 condensed-title>App name</h4>
   </app-toolbar>
   <app-toolbar>
-      <h1 main-title>App name</h1>
+      <h1 title>App name</h1>
   </app-toolbar>
 </app-header>
 ```
 
 * **resize-snapped-title**
 Upon scrolling past a threshold, this effect fades in/out the titles using opacity transitions.
-Similarly to `resize-title`, the `main-title` and `condensed-title` elements must be placed in the
+Similarly to `resize-title`, the `title` and `condensed-title` elements must be placed in the
 light DOM.
 
 * **waterfall**
@@ -12069,7 +12077,7 @@ app-header {
 ```html
 <app-header condenses reveals effects="waterfall">
   <app-toolbar>
-      <h1 main-title>App name</h1>
+      <h1 title>App name</h1>
   </app-toolbar>
 </app-header>
 ```
@@ -12081,7 +12089,7 @@ Installs the waterfall, resize-title, blend-background and parallax-background e
 
 Attribute | Description         | Default
 ----------|---------------------|----------------------------------------
-`sticky` | Element that remains at the top when the header condenses. | The first app-toolbar in the light DOM.
+`primary` | Element that remains at the top when the header condenses. | The first app-toolbar in the light DOM.
 
 
 ## Styling
@@ -12102,7 +12110,7 @@ Mixin | Description | Default
 @demo app-header/demo/music.html Reveals Demo
 @demo app-header/demo/no-effects.html Condenses and Reveals Demo
 @demo app-header/demo/notes.html Fixed with Dynamic Shadow Demo
-@demo app-header/demo/custom-sticky-element.html Custom Sticky Element Demo
+@demo app-header/demo/custom-primary-element.html Custom Primary Element Demo
 -->
 
 <dom-module id="app-header" assetpath="bower_components/app-layout/app-header/">
@@ -12143,7 +12151,7 @@ Mixin | Description | Default
         opacity: 0;
       }
 
-      #contentContainer > ::content [main-title] {
+      #contentContainer > ::content [title] {
         -webkit-transform-origin: left top;
         transform-origin: left top;
         white-space: nowrap;
@@ -12182,14 +12190,14 @@ Mixin | Description | Default
       :host([disabled]) #backgroundFrontLayer,
       :host([disabled]) #backgroundRearLayer,
       :host([disabled]) ::content > app-toolbar:first-of-type,
-      :host([disabled]) ::content > [sticky],
+      :host([disabled]) ::content > [primary],
       /* Silent scrolling should not run CSS transitions */
       :host-context(.app-layout-silent-scroll),
       :host-context(.app-layout-silent-scroll)::after,
       :host-context(.app-layout-silent-scroll) #backgroundFrontLayer,
       :host-context(.app-layout-silent-scroll) #backgroundRearLayer,
       :host-context(.app-layout-silent-scroll) ::content > app-toolbar:first-of-type,
-      :host-context(.app-layout-silent-scroll) ::content > [sticky] {
+      :host-context(.app-layout-silent-scroll) ::content > [primary] {
         transition: none !important;
       }
     </style>
@@ -12210,10 +12218,10 @@ Mixin | Description | Default
       properties: {
         /**
          * If true, the header will automatically collapse when scrolling down.
-         * That is, the `sticky` element remains visible when the header is fully condensed
-         * whereas the rest of the elements will collapse below `sticky` element.
+         * That is, the `primary` element remains visible when the header is fully condensed
+         * whereas the rest of the elements will collapse below `primary` element.
          *
-         * By default, the `sticky` element is the first toolbar in the light DOM:
+         * By default, the `primary` element is the first toolbar in the light DOM:
          *
          *```html
          * <app-header condenses>
@@ -12224,18 +12232,18 @@ Mixin | Description | Default
          * ```
          *
          * Additionally, you can specify which toolbar or element remains visible in condensed mode
-         * by adding the `sticky` attribute to that element. For example: if we want the last
-         * toolbar to remain visible, we can add the `sticky` attribute to it.
+         * by adding the `primary` attribute to that element. For example: if we want the last
+         * toolbar to remain visible, we can add the `primary` attribute to it.
          *
          *```html
          * <app-header condenses>
          *   <app-toolbar></app-toolbar>
          *   <app-toolbar></app-toolbar>
-         *   <app-toolbar sticky>This toolbar remains on top</app-toolbar>
+         *   <app-toolbar primary>This toolbar remains on top</app-toolbar>
          * </app-header>
          * ```
          *
-         * Note the `sticky` element must be a direct child of `app-header`.
+         * Note the `primary` element must be a child of `app-header`.
          */
         condenses: {
           type: Boolean,
@@ -12291,18 +12299,18 @@ Mixin | Description | Default
       _dHeight: 0,
 
       /**
-       * The offsetTop of `_stickyEl`
+       * The offsetTop of `_primaryEl`
        *
        * @type {number}
        */
-      _stickyElTop: 0,
+      _primaryElTop: 0,
 
       /**
        * The element that remains visible when the header condenses.
        *
        * @type {HTMLElement}
        */
-      _stickyEl: null,
+      _primaryEl: null,
 
       /**
        * The header's top value used for the `transformY`
@@ -12334,27 +12342,27 @@ Mixin | Description | Default
       },
 
       /**
-       * Returns a reference to the sticky element.
+       * Returns a reference to the element that remains visible when the header condenses.
        *
        * @return {HTMLElement}?
        */
-      _getStickyEl: function() {
+      _getPrimaryEl: function() {
         /** @type {HTMLElement} */
-        var stickyEl;
+        var primaryEl;
         var nodes = Polymer.dom(this.$.content).getDistributedNodes();
 
         for (var i = 0; i < nodes.length; i++) {
           if (nodes[i].nodeType === Node.ELEMENT_NODE) {
             var node = /** @type {HTMLElement} */ (nodes[i]);
-            if (node.hasAttribute('sticky')) {
-              stickyEl = node;
+            if (node.hasAttribute('primary')) {
+              primaryEl = node;
               break;
-            } else if (!stickyEl) {
-              stickyEl = node;
+            } else if (!primaryEl) {
+              primaryEl = node;
             }
           }
         }
-        return stickyEl;
+        return primaryEl;
       },
 
       /**
@@ -12378,7 +12386,7 @@ Mixin | Description | Default
           var currentDisabled = this.disabled;
 
           this._height = this.offsetHeight;
-          this._stickyEl = this._getStickyEl();
+          this._primaryEl = this._getPrimaryEl();
           this.disabled = true;
 
           // prepare for measurement
@@ -12387,12 +12395,12 @@ Mixin | Description | Default
           }
 
           if (this._mayMove()) {
-            this._dHeight = this._stickyEl ? this._height - this._stickyEl.offsetHeight : 0;
+            this._dHeight = this._primaryEl ? this._height - this._primaryEl.offsetHeight : 0;
           } else {
             this._dHeight = 0;
           }
 
-          this._stickyElTop = this._stickyEl ? this._stickyEl.offsetTop : 0;
+          this._primaryElTop = this._primaryEl ? this._primaryEl.offsetTop : 0;
           this._setUpEffect();
 
           if (firstSetup) {
@@ -12529,9 +12537,9 @@ Mixin | Description | Default
        */
       _transformHeader: function(y) {
         this.translate3d(0, (-y) + 'px', 0);
-        if (this._stickyEl && this.condenses && y >= this._stickyElTop) {
-          this.translate3d(0, (Math.min(y, this._dHeight) - this._stickyElTop) + 'px', 0,
-              this._stickyEl);
+        if (this._primaryEl && this.condenses && y >= this._primaryElTop) {
+          this.translate3d(0, (Math.min(y, this._dHeight) - this._primaryElTop) + 'px', 0,
+              this._primaryEl);
         }
       },
 
@@ -12571,8 +12579,8 @@ Mixin | Description | Default
           case 'background':
             this._ensureBgContainers();
             return this._bgContainer;
-          case 'mainTitle':
-            return Polymer.dom(this).querySelector('[main-title]');
+          case 'title':
+            return Polymer.dom(this).querySelector('[title]');
           case 'condensedTitle':
             return Polymer.dom(this).querySelector('[condensed-title]');
         }
@@ -12616,7 +12624,7 @@ Using the document scroll:
 <app-header-layout>
   <app-header fixed condenses effects="waterfall">
     <app-toolbar>
-      <div main-title>App name</div>
+      <div title>App name</div>
     </app-toolbar>
   </app-header>
   <div>
@@ -12631,7 +12639,7 @@ Using an own scrolling region:
 <app-header-layout has-scrolling-region style="width: 300px; height: 400px;">
   <app-header fixed condenses effects="waterfall">
     <app-toolbar>
-      <div main-title>App name</div>
+      <div title>App name</div>
     </app-toolbar>
   </app-header>
   <div>
@@ -12640,20 +12648,11 @@ Using an own scrolling region:
 </app-header-layout>
 ```
 
-Add the `fullbleed` attribute to app-header-layout to make it fit the size of its container:
-
-```html
-<app-header-layout fullbleed>
- ...
-</app-header-layout>
-```
-
 @group App Elements
 @element app-header-layout
 @demo app-header-layout/demo/simple.html Simple Demo
 @demo app-header-layout/demo/scrolling-region.html Scrolling Region
 @demo app-header-layout/demo/music.html Music Demo
-@demo app-header-layout/demo/footer.html Footer Demo
 -->
 
 <dom-module id="app-header-layout" assetpath="bower_components/app-layout/app-header-layout/">
@@ -12661,6 +12660,7 @@ Add the `fullbleed` attribute to app-header-layout to make it fit the size of it
     <style>
       :host {
         display: block;
+
         /**
          * Force app-header-layout to have its own stacking context so that its parent can
          * control the stacking of it relative to other elements (e.g. app-drawer-layout).
@@ -12671,33 +12671,18 @@ Add the `fullbleed` attribute to app-header-layout to make it fit the size of it
         z-index: 0;
       }
 
-      :host > ::content > app-header {
-        @apply(--layout-fixed-top);
-        z-index: 1;
-      }
-
       :host([has-scrolling-region]) {
         height: 100%;
       }
 
+      :host > ::content > app-header {
+        @apply(--layout-fixed-top);
+
+        z-index: 1;
+      }
+
       :host([has-scrolling-region]) > ::content > app-header {
         position: absolute;
-      }
-
-      :host([has-scrolling-region]) > #contentContainer {
-        @apply(--layout-fit);
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
-      }
-
-      :host([fullbleed]) {
-        @apply(--layout-vertical);
-        @apply(--layout-fit);
-      }
-
-      :host([fullbleed]) > #contentContainer {
-        @apply(--layout-vertical);
-        @apply(--layout-flex);
       }
 
       #contentContainer {
@@ -12706,6 +12691,12 @@ Add the `fullbleed` attribute to app-header-layout to make it fit the size of it
         z-index: 0;
       }
 
+      :host([has-scrolling-region]) > #contentContainer {
+        @apply(--layout-fit);
+
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+      }
     </style>
 
     <content id="header" select="app-header"></content>
@@ -12770,9 +12761,11 @@ Add the `fullbleed` attribute to app-header-layout to make it fit the size of it
         if (!this.isAttached || !header) {
           return;
         }
+
         // Get header height here so that style reads are batched together before style writes
         // (i.e. getBoundingClientRect() below).
         var headerHeight = header.offsetHeight;
+
         // Update the header position.
         if (!this.hasScrollingRegion) {
           var rect = this.getBoundingClientRect();
@@ -12783,6 +12776,7 @@ Add the `fullbleed` attribute to app-header-layout to make it fit the size of it
           header.style.left = '';
           header.style.right = '';
         }
+
         // Update the content container position.
         var containerStyle = this.$.contentContainer.style;
         if (header.fixed && !header.willCondense() && this.hasScrollingRegion) {
@@ -12832,7 +12826,7 @@ Add a title to the toolbar.
 
 ```html
 <app-toolbar>
-  <div main-title>App name</div>
+  <div title>App name</div>
 </app-toolbar>
 ```
 
@@ -12841,7 +12835,7 @@ Add a button to the left and right side of the toolbar.
 ```html
 <app-toolbar>
   <paper-icon-button icon="menu"></paper-icon-button>
-  <div main-title>App name</div>
+  <div title>App name</div>
   <paper-icon-button icon="search"></paper-icon-button>
 </app-toolbar>
 ```
@@ -12853,7 +12847,7 @@ to the top or bottom of the toolbar respectively.
 
 Attribute            | Description 
 ---------------------|---------------------------------------------------------
-`main-title`         | The main title element.
+`title`              | The main title element.
 `condensed-title`    | The title element if used inside a condensed app-header.
 `spacer`             | Adds a left margin of `64px`.
 `bottom-item`        | Sticks the element to the bottom of the toolbar.
@@ -12896,7 +12890,7 @@ Custom property              | Description                  | Default
         font-size: 0;
       }
 
-      :host > ::content > [main-title],
+      :host > ::content > [title],
       :host > ::content > [condensed-title] {
         pointer-events: none;
         @apply(--layout-flex);
@@ -17924,8 +17918,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
        * element, bind this to the `<input is="iron-input">`'s `autofocus` property.
        */
       autofocus: {
-        type: Boolean,
-        observer: '_autofocusChanged'
+        type: Boolean
       },
 
       /**
@@ -18241,33 +18234,6 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           bubbles: event.bubbles,
           cancelable: event.cancelable
         });
-      }
-    },
-
-    _autofocusChanged: function() {
-      // Firefox doesn't respect the autofocus attribute if it's applied after
-      // the page is loaded (Chrome/WebKit do respect it), preventing an
-      // autofocus attribute specified in markup from taking effect when the
-      // element is upgraded. As a workaround, if the autofocus property is set,
-      // and the focus hasn't already been moved elsewhere, we take focus.
-      if (this.autofocus && this._focusableElement) {
-
-        // In IE 11, the default document.activeElement can be the page's
-        // outermost html element, but there are also cases (under the
-        // polyfill?) in which the activeElement is not a real HTMLElement, but
-        // just a plain object. We identify the latter case as having no valid
-        // activeElement.
-        var activeElement = document.activeElement;
-        var isActiveElementValid = activeElement instanceof HTMLElement;
-
-        // Has some other element has already taken the focus?
-        var isSomeElementActive = isActiveElementValid &&
-            activeElement !== document.body &&
-            activeElement !== document.documentElement; /* IE 11 */
-        if (!isSomeElementActive) {
-          // No specific element has taken the focus yet, so we can take it.
-          this._focusableElement.focus();
-        }
       }
     }
   }
@@ -19381,14 +19347,14 @@ style this element.
 
       <content select="[prefix]"></content>
 
-      <label hidden$="[[!label]]" aria-hidden="true" for="input">[[label]]</label>
+      <label hidden$="[[!label]]" aria-hidden="true">[[label]]</label>
 
       <input is="iron-input" id="input" aria-labelledby$="[[_ariaLabelledBy]]" aria-describedby$="[[_ariaDescribedBy]]" disabled$="[[disabled]]" title$="[[title]]" bind-value="{{value}}" invalid="{{invalid}}" prevent-invalid-input="[[preventInvalidInput]]" allowed-pattern="[[allowedPattern]]" validator="[[validator]]" type$="[[type]]" pattern$="[[pattern]]" required$="[[required]]" autocomplete$="[[autocomplete]]" autofocus$="[[autofocus]]" inputmode$="[[inputmode]]" minlength$="[[minlength]]" maxlength$="[[maxlength]]" min$="[[min]]" max$="[[max]]" step$="[[step]]" name$="[[name]]" placeholder$="[[placeholder]]" readonly$="[[readonly]]" list$="[[list]]" size$="[[size]]" autocapitalize$="[[autocapitalize]]" autocorrect$="[[autocorrect]]" on-change="_onChange" tabindex$="[[tabindex]]" autosave$="[[autosave]]" results$="[[results]]" accept$="[[accept]]" multiple$="[[multiple]]">
 
       <content select="[suffix]"></content>
 
       <template is="dom-if" if="[[errorMessage]]">
-        <paper-input-error aria-live="assertive">[[errorMessage]]</paper-input-error>
+        <paper-input-error>[[errorMessage]]</paper-input-error>
       </template>
 
       <template is="dom-if" if="[[charCounter]]">
@@ -21271,7 +21237,7 @@ iron-request can be used to perform XMLHttpRequests.
       var request = /** @type {!IronRequestElement} */ (document.createElement('iron-request'));
       var requestOptions = this.toRequestOptions();
 
-      this.push('activeRequests', request);
+      this.activeRequests.push(request);
 
       request.completes.then(
         this._boundHandleResponse
@@ -21329,7 +21295,7 @@ iron-request can be used to perform XMLHttpRequests.
       var requestIndex = this.activeRequests.indexOf(request);
 
       if (requestIndex > -1) {
-        this.splice('activeRequests', requestIndex, 1);
+        this.activeRequests.splice(requestIndex, 1);
       }
     },
 
@@ -21505,15 +21471,23 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 	  ready: function() {
 		this.loc = "CDA"
 		/** Cargar this.data **/
+		this.data = []
+		this.filtered_data = this.data
 		if (localStorage.getItem("prod_data") === null)
 		{
-			this.$.ajax.url = 'http://localhost:3000/proddata'
+			/*this.$.ajax.url = 'http://localhost:3000/proddata'
 			this.$.ajax.contentType="application/json"
 			this.msg = ' '
 			this.$.ajax.body = {"my_key": "v3nt4m0v1l.123"}
-			this.$.ajax.generateRequest()
-			this.data = []
+			this.$.ajax.generateRequest()*/
+			this.data = [
+			{descripcion: "AMPICILINA CLX SUSP 125MGX60ML", existencia_cda: 126, existencia_cdg: 64, precio: 127.5.toLocaleString() },
+			//.toFixed(2)
+			{descripcion: "BRANE 200MG PVO SOL ORAL X10 SOB", existencia_cda: 86, existencia_cdg: 44, precio: 22.60.toLocaleString() },
+			{descripcion: "MANIDON TAB 40MGX50", existencia_cda: 62, existencia_cdg: 54, precio: 1854.45.toLocaleString() }
+			]
 			this.filtered_data = this.data
+			localStorage["prod_data"] = JSON.stringify(this.data)
 		}
 		else
 		{

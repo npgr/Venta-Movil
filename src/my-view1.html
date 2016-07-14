@@ -137,11 +137,19 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		this.filtered_data = this.data
 		if (localStorage.getItem("prod_data") === null)
 		{
-			this.$.ajax.url = 'http://localhost:3000/proddata'
+			/*this.$.ajax.url = 'http://localhost:3000/proddata'
 			this.$.ajax.contentType="application/json"
 			this.msg = ' '
 			this.$.ajax.body = {"my_key": "v3nt4m0v1l.123"}
-			this.$.ajax.generateRequest()	
+			this.$.ajax.generateRequest()*/
+			this.data = [
+			{descripcion: "AMPICILINA CLX SUSP 125MGX60ML", existencia_cda: 126, existencia_cdg: 64, precio: 127.5.toLocaleString() },
+			//.toFixed(2)
+			{descripcion: "BRANE 200MG PVO SOL ORAL X10 SOB", existencia_cda: 86, existencia_cdg: 44, precio: 22.60.toLocaleString() },
+			{descripcion: "MANIDON TAB 40MGX50", existencia_cda: 62, existencia_cdg: 54, precio: 1854.45.toLocaleString() }
+			]
+			this.filtered_data = this.data
+			localStorage["prod_data"] = JSON.stringify(this.data)
 		}
 		else
 		{
