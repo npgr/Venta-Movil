@@ -1,0 +1,142 @@
+<!--
+@license
+Copyright (c) 2016 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/app-layout/app-drawer-layout/app-drawer-layout.html">
+<link rel="import" href="../bower_components/app-layout/app-drawer/app-drawer.html">
+<link rel="import" href="../bower_components/app-layout/app-scroll-effects/app-scroll-effects.html">
+<link rel="import" href="../bower_components/app-layout/app-header/app-header.html">
+<link rel="import" href="../bower_components/app-layout/app-header-layout/app-header-layout.html">
+<link rel="import" href="../bower_components/app-layout/app-toolbar/app-toolbar.html">
+<link rel="import" href="../bower_components/paper-tabs/paper-tabs.html">
+<link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
+
+<link rel="import" href="my-icons.html">
+
+<dom-module id="app-pedido">
+
+  <template>
+
+    <style>
+
+      :host {
+        display: block;
+        --app-primary-color: #4285f4;
+        --app-secondary-color: black;
+      }
+
+      app-header {
+        background-color: var(--app-primary-color);
+        color: #fff;
+      }
+      app-header paper-icon-button {
+        --paper-icon-button-ink-color: white;
+      }
+
+      .drawer-list {
+        margin: 0 20px;
+      }
+      .drawer-list a {
+        display: block;
+        padding: 0 16px;
+        line-height: 40px;
+        text-decoration: none;
+        color: var(--app-secondary-color);
+      }
+      .drawer-list a.iron-selected {
+        color: black;
+        font-weight: bold;
+      }
+      .drawer-list a.subroute {
+        padding-left: 32px;
+      }
+	  [hide] {
+		display: none;
+	  }
+
+    </style>
+
+    <app-drawer-layout id="my_app" fullbleed>
+
+      <!-- Drawer content -->
+      <app-drawer>
+        <app-toolbar>Menu</app-toolbar>
+      </app-drawer>
+
+      <!-- Main content -->
+      <app-header-layout has-scrolling-region>
+
+        <app-header condenses reveals effects="waterfall">
+          <app-toolbar style="height: 85px;">
+			<div top-item style="display: flex; justify-content: space-between; margin: 5px 15px;">
+				<paper-icon-button icon="menu" drawer-toggle></paper-icon-button>
+				<div main-title>{{titulo}}</div>
+				<div on-click="full">[ . . ]</div>
+			</div>
+			<paper-tabs bottom-item selected="0" <!--class="bottom self-end"--> >
+				<paper-tab on-click="view1">Ped</paper-tab>
+				<paper-tab on-click="view2">Prods</paper-tab>
+				<paper-tab on-click="view3">Reng</paper-tab>
+			</paper-tabs>
+			
+          </app-toolbar>
+        </app-header>
+
+			<!--<my-view1></my-view1>-->
+			<div id='view1'>Vista 1</div>
+			<div id='view2' hide>Vista 2</div>
+			<div id='view3' hide>Vista 3</div>
+
+      </app-header-layout>
+
+    </app-drawer-layout>
+
+  </template>
+
+  <script>
+
+    Polymer({
+
+      is: 'app-pedido',
+	  
+	  ready: function() {
+		this.titulo = 'Pedido'
+	  },
+	  full: function() {
+	  
+		var el = document.getElementById("my_app"); 
+		//el.requestFullscreen()
+		el.webkitRequestFullScreen()
+
+	  },
+	  view1: function() {
+		this.titulo = 'Pedido'
+		this.$.view2.setAttribute("hide","");
+		this.$.view3.setAttribute("hide","");
+		this.$.view1.removeAttribute("hide");
+	  },
+	  view2: function() {
+		this.titulo = 'Productos'
+		this.$.view1.setAttribute("hide","");
+		this.$.view3.setAttribute("hide","");
+		this.$.view2.removeAttribute("hide");
+		
+	  },
+	  view3: function() {
+		this.titulo = 'Renglones'
+		this.$.view1.setAttribute("hide","");
+		this.$.view2.setAttribute("hide","");
+		this.$.view3.removeAttribute("hide");
+	  }
+
+    });
+
+  </script>
+
+</dom-module>
