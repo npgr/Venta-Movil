@@ -1,0 +1,1 @@
+vulcanize --inline-css --inline-scripts index2.html > index3.html

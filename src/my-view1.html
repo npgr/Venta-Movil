@@ -14,6 +14,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 <link rel="import" href="../bower_components/paper-fab/paper-fab.html">
 <link rel="import" href="../bower_components/paper-button/paper-button.html">
 <link rel="import" href="../bower_components/iron-collapse/iron-collapse.html">
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
 
 <dom-module id="my-view1">
 
@@ -94,6 +95,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		background-color:#C8E6C9;
 	  }
     </style>
+	<iron-ajax id="ajax" method='POST' handle-as="json" on-response="load_data" on-error="ajax_error"></iron-ajax>
 	<!--<iron-collapse flex id="search">-->
 	<div id="header_line">
 		<paper-input id="prod_src" floatinglabel label="Producto"></paper-input>
@@ -131,16 +133,37 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 	  ready: function() {
 		this.loc = "CDA"
 		/** Cargar this.data **/
-		/*this.data = [
-			{descripcion: "AMPICILINA CLX SUSP 125MGX60ML", existencia: 126, precio: 127.5.toLocaleString() },
-			//.toFixed(2)
-			{descripcion: "BRANE 200MG PVO SOL ORAL X10 SOB", existencia: 32, precio: 22.60.toLocaleString() },
-			{descripcion: "MANIDON TAB 40MGX50", existencia: 1230, precio: 1854.45.toLocaleString() }
-		]
-		localStorage["prod_data"] = JSON.stringify(this.data);*/
+		this.data = []
+		this.filtered_data = this.data
+		if (localStorage.getItem("prod_data") === null)
+		{
+			this.$.ajax.url = 'http://localhost:3000/proddata'
+			this.$.ajax.contentType="application/json"
+			this.msg = ' '
+			this.$.ajax.body = {"my_key": "v3nt4m0v1l.123"}
+			this.$.ajax.generateRequest()	
+		}
+		else
+		{
+			this.data = JSON.parse(localStorage["prod_data"])
+			this.filtered_data = []
+			//this.filter()
+		}
+	  },
+	  load_data: function() {
+		localStorage["prod_data"] = JSON.stringify(this.$.ajax.lastResponse)
 		this.data = JSON.parse(localStorage["prod_data"])
-		//this.filtered_data = this.data
-		this.filter()
+		if (this.$.ajax.lastResponse.err)
+			this.msg = this.$.ajax.lastResponse.err
+		else 
+			this.msg = 'Cargados '+this.$.ajax.lastResponse.length+' Registros'
+		alert(this.msg)
+	  },
+	  ajax_error: function() {
+		console.log(this.$.ajax.lastError)
+		//alert("<%= lng('Error Processing Request: ')%>", this.$.ajax.lastError)
+		this.msg = 'Error Cargando Productos'
+		alert(this.msg)
 	  },
 	  change_loc: function() {
 		if (this.loc == 'CDA') this.loc = 'CDG'
