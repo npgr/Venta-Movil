@@ -17,6 +17,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 <link rel="import" href="../bower_components/paper-tabs/paper-tabs.html">
 <link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
 
 <link rel="import" href="my-icons.html">
 
@@ -63,32 +64,94 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
     </style>
 	
+	<dom-module id="view-renglones">
+	  <template>
+		{{renglones1}}
+	  </template>
+	  <script>
+		Polymer({
+			is: 'view-renglones',
+			properties: {
+				renglones: {
+					type: Object,
+					value: function() { return {}; }
+				}
+			},
+			view: function() {
+				this.renglones1 = JSON.stringify(this.renglones)
+			}
+		})
+	  </script>
+	</dom-module>
+	
+	
+	<dom-module id="view-prods">
+	  <template>
+		{{pedido1}}
+	  </template>
+	  <script>
+		Polymer({
+			is: 'view-prods',
+			ready: function() {
+				this.pedido = {
+					skus: 24,
+					unds: 115,
+					mto: 235400
+				}
+				this.fire('pedidochg')
+				this.pedido1 = JSON.stringify(this.pedido)
+				this.renglones = [
+					{ cod: 100, unds: 25 },
+					{ cod: 120, unds: 45 },
+					{ cod: 87, unds: 11 },
+				]
+				//this.fire('rengloneschg')
+			}
+		})
+	  </script>
+	</dom-module>
+	
+	<!--*** View Pedido ***-->
+	<!--*******************-->
+	
 	<dom-module id="view-pedido">
 	  <template>
 		<style>
 			paper-input { margin-left: 12px; }
 		</style>
-		<paper-input id="clte" label="Cliente" style="width: 300px;" readonly></paper-input>
-		<paper-input id="sku" label="Productos" style="width: 80px;" readonly></paper-input>
-		<paper-input id="unds" label="Unidades" style="width: 100px;" readonly></paper-input>
-		<paper-input id="mto" label="Total Pedido" style="width: 160px;" readonly></paper-input>
+		<paper-input id="clte" value={{cliente.nombre}} label="Cliente" style="width: 300px;" readonly></paper-input>
+		<paper-input id="disponible" value={{cliente.disponible}} label="Saldo Disponible" value={{disponible}} style="width: 160px;" readonly></paper-input>
+		<paper-input id="sku" value={{pedido.skus}} label="Productos" style="width: 80px;" readonly></paper-input>
+		<paper-input id="unds" value={{pedido.unds}} label="Unidades" style="width: 100px;" readonly></paper-input>
+		<paper-input id="mto" value={{pedido.mto}} label="Total Pedido" style="width: 160px;" readonly></paper-input>
+		
+		<paper-button>Enviar Pedido</paper-button>
 	  </template>
 	  <script>
 		Polymer({
 
 		is: 'view-pedido',
 		
+		properties: {
+			pedido: {
+				type: Object,
+				value: function() { return {}; }
+			}
+		},
 		ready: function() {
 			
-			this.$.clte.value = "FARMACIA LA REDOMA CATIA LA MAR 2006, C.A.".toLowerCase()
-			this.$.sku.value = 23
-			this.$.unds.value = 148
-			this.$.mto.value = 120574.86
+			this.cliente = {
+				nombre: "FARMACIA LA REDOMA CATIA LA MAR 2006, C.A.".toLowerCase(),
+				disponible: 19500
+			} 
 		}
 		})
 	  </script>
 	</dom-module>
 
+	<!--*** MAIN ***-->
+	<!--************-->
+	
     <app-drawer-layout id="my_app" fullbleed>
 
       <!-- Drawer content -->
@@ -115,11 +178,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           </app-toolbar>
         </app-header>
 
-			<!--<my-view1></my-view1>-->
-			<!--<div id='view1'>Vista 1</div>-->
 			<view-pedido id='view1'></view-pedido>
-			<div id='view2' hide>Vista 2</div>
-			<div id='view3' hide>Vista 3</div>
+			<view-prods id='view2' on-pedidochg="upd_pedido" hide></view-prods>
+			<view-renglones id='view3' hide></view-renglones>
 
       </app-header-layout>
 
@@ -143,6 +204,10 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		el.webkitRequestFullScreen()
 
 	  },
+	  upd_pedido: function() {
+		//console.log('upd_pedido', this.$.view2.pedido)
+		this.$.view1.pedido = this.$.view2.pedido
+	  },
 	  view1: function() {
 		this.titulo = 'Pedido'
 		this.$.view2.setAttribute("hide","");
@@ -158,6 +223,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 	  },
 	  view3: function() {
 		this.titulo = 'Renglones'
+		this.$.view3.renglones = this.$.view2.renglones
+		this.$.view3.view()
 		this.$.view1.setAttribute("hide","");
 		this.$.view2.setAttribute("hide","");
 		this.$.view3.removeAttribute("hide");
