@@ -64,13 +64,13 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
     </style>
 	
-	<dom-module id="view-renglones">
+	<dom-module id="tab-renglones">
 	  <template>
 		{{renglones1}}
 	  </template>
 	  <script>
 		Polymer({
-			is: 'view-renglones',
+			is: 'tab-renglones',
 			properties: {
 				renglones: {
 					type: Object,
@@ -85,13 +85,13 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 	</dom-module>
 	
 	
-	<dom-module id="view-prods">
+	<dom-module id="tab-prods">
 	  <template>
 		{{pedido1}}
 	  </template>
 	  <script>
 		Polymer({
-			is: 'view-prods',
+			is: 'tab-prods',
 			ready: function() {
 				this.pedido = {
 					skus: 24,
@@ -114,7 +114,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 	<!--*** View Pedido ***-->
 	<!--*******************-->
 	
-	<dom-module id="view-pedido">
+	<dom-module id="tab-pedido">
 	  <template>
 		<style>
 			paper-input { margin-left: 12px; }
@@ -130,7 +130,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 	  <script>
 		Polymer({
 
-		is: 'view-pedido',
+		is: 'tab-pedido',
 		
 		properties: {
 			pedido: {
@@ -143,7 +143,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 			this.cliente = {
 				nombre: "FARMACIA LA REDOMA CATIA LA MAR 2006, C.A.".toLowerCase(),
 				disponible: 19500
-			} 
+			}
+			var app_pedido = document.getElementById('app_pedido')
+			this.pedido = app_pedido.total_pedido()
 		}
 		})
 	  </script>
@@ -178,9 +180,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           </app-toolbar>
         </app-header>
 
-			<view-pedido id='view1'></view-pedido>
-			<view-prods id='view2' on-pedidochg="upd_pedido" hide></view-prods>
-			<view-renglones id='view3' hide></view-renglones>
+			<tab-pedido id='view1'></tab-pedido>
+			<tab-prods id='view2' on-pedidochg="upd_pedido" hide></tab-prods>
+			<tab-renglones id='view3' hide></tab-renglones>
 
       </app-header-layout>
 
@@ -194,8 +196,41 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
       is: 'app-pedido',
 	  
+	  properties: {
+		/*pedido: {
+			type: String,
+			value: 'Prueba 1'
+		}*/
+	  },
+	  
 	  ready: function() {
 		this.titulo = 'Pedido'
+		this.pedido = []
+	  },
+	  agregar_renglon: function(renglon) {
+		this.pedido.push(renglon)
+	  },
+	  cambiar_renglon: function() {
+		/** id producto y Cantidad **/
+		/** si cantidad == cero, borrar renglon **/
+	  },
+	  get_renglones: function() {
+	  
+	  },
+	  total_pedido: function() {
+		var total = {
+			skus: 10,
+			unds: 20,
+			mto: 30
+		}
+		/** Return total skus, unds, monto **/
+		return total
+	  },
+	  set_cliente: function() {
+	  
+	  },
+	  get_cliente: function() {
+	  
 	  },
 	  full: function() {
 	  
