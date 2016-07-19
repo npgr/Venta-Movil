@@ -93,18 +93,23 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		Polymer({
 			is: 'tab-prods',
 			ready: function() {
-				this.pedido = {
-					skus: 24,
-					unds: 115,
-					mto: 235400
-				}
-				this.fire('pedidochg')
-				this.pedido1 = JSON.stringify(this.pedido)
+				
 				this.renglones = [
-					{ cod: 100, unds: 25 },
-					{ cod: 120, unds: 45 },
-					{ cod: 87, unds: 11 },
+					{ cod: 100, unds: 25, precio: 11.2 },
+					{ cod: 120, unds: 45, precio: 24.5 },
+					{ cod: 87,  unds: 11, precio: 123.75  },
 				]
+				
+				setTimeout(function(){
+					var app_pedido = document.getElementById('app_pedido')
+					app_pedido.agregar_renglon({ cod: 100, unds: 25, precio: 11.2 })
+					app_pedido.agregar_renglon({ cod: 120, unds: 45, precio: 24.5 })
+					app_pedido.agregar_renglon({ cod: 87,  unds: 11, precio: 123.75  })
+				
+					this.pedido = app_pedido.total_pedido() 
+				
+					this.pedido1 = JSON.stringify(this.pedido)
+				}, 1000);
 				//this.fire('rengloneschg')
 			}
 		})
@@ -120,12 +125,18 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 			paper-input { margin-left: 12px; }
 		</style>
 		<paper-input id="clte" value={{cliente.nombre}} label="Cliente" style="width: 300px;" readonly></paper-input>
-		<paper-input id="disponible" value={{cliente.disponible}} label="Saldo Disponible" value={{disponible}} style="width: 160px;" readonly></paper-input>
-		<paper-input id="sku" value={{pedido.skus}} label="Productos" style="width: 80px;" readonly></paper-input>
-		<paper-input id="unds" value={{pedido.unds}} label="Unidades" style="width: 100px;" readonly></paper-input>
-		<paper-input id="mto" value={{pedido.mto}} label="Total Pedido" style="width: 160px;" readonly></paper-input>
-		
-		<paper-button>Enviar Pedido</paper-button>
+		<div style="display: flex">
+		   <paper-input id="disponible" value={{cliente.disponible}} label="Saldo Disponible" style="width: 120px;" readonly></paper-input>
+		   <paper-input id="dcto" value={{cliente.dcto_txt}} label="Dcto Comercial" style="width: 90px; padding-left:15px;" readonly></paper-input>
+		</div>
+		<!--<br>-->
+		<h4 style="margin: 8px 15px;">> Pedido</h4>
+		<div style="display: flex">
+		   <paper-input id="sku" value={{pedido.skus}} label="Productos" style="width: 60px;" readonly></paper-input>
+		   <paper-input id="unds" value={{pedido.unds}} label="Unidades" style="width: 70px; padding-left:7px;" readonly></paper-input>
+			<paper-input id="mto" value={{pedido.mto}} label="Total Monto" style="width: 125px; padding-left:7px;" readonly></paper-input>
+		</div>
+		<paper-button style="background-color: #68c122; margin: 20px 80px;">Enviar Pedido</paper-button>
 	  </template>
 	  <script>
 		Polymer({
@@ -142,10 +153,18 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 			
 			this.cliente = {
 				nombre: "FARMACIA LA REDOMA CATIA LA MAR 2006, C.A.".toLowerCase(),
-				disponible: 19500
+				disponible: 19500,
+				dcto: 11.3,
+				dcto_txt: '11.3 %'
 			}
-			var app_pedido = document.getElementById('app_pedido')
-			this.pedido = app_pedido.total_pedido()
+			
+			this.pedido = app_pedido.total_pedido() 
+			setTimeout(function(){ 
+				var app_pedido = document.getElementById('app_pedido')
+				this.pedido = app_pedido.total_pedido() 
+				//this.skus = pedido.skus
+			}, 2000);
+			
 		}
 		})
 	  </script>
@@ -181,7 +200,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         </app-header>
 
 			<tab-pedido id='view1'></tab-pedido>
-			<tab-prods id='view2' on-pedidochg="upd_pedido" hide></tab-prods>
+			<tab-prods id='view2'  hide></tab-prods>
 			<tab-renglones id='view3' hide></tab-renglones>
 
       </app-header-layout>
@@ -208,29 +227,34 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		this.pedido = []
 	  },
 	  agregar_renglon: function(renglon) {
+		console.log('Agregando renglon: ', renglon)
 		this.pedido.push(renglon)
+		console.log('Pedido: ', this.pedido)
 	  },
 	  cambiar_renglon: function() {
 		/** id producto y Cantidad **/
 		/** si cantidad == cero, borrar renglon **/
 	  },
-	  get_renglones: function() {
-	  
+	  get_pedido: function() {
+		return this.pedido
 	  },
 	  total_pedido: function() {
-		var total = {
-			skus: 10,
-			unds: 20,
-			mto: 30
+		var total = {	skus: 0,	unds: 0,	mto: 0  }
+		for (var i=0; i < this.pedido.length; i++)
+		{
+			total.skus ++
+			total.unds += this.pedido[i].unds
+			total.mto += (this.pedido[i].unds * this.pedido[i].precio)
 		}
 		/** Return total skus, unds, monto **/
+		console.log('total pedido', total)
 		return total
 	  },
-	  set_cliente: function() {
-	  
+	  set_cliente: function(clte) {
+		this.cliente = clte
 	  },
 	  get_cliente: function() {
-	  
+		return this.cliente
 	  },
 	  full: function() {
 	  
@@ -238,10 +262,6 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		//el.requestFullscreen()
 		el.webkitRequestFullScreen()
 
-	  },
-	  upd_pedido: function() {
-		//console.log('upd_pedido', this.$.view2.pedido)
-		this.$.view1.pedido = this.$.view2.pedido
 	  },
 	  view1: function() {
 		this.titulo = 'Pedido'
