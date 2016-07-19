@@ -18,6 +18,10 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 <link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="../bower_components/paper-input/paper-input.html">
 <link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../bower_components/iron-collapse/iron-collapse.html">
+<link rel="import" href="../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../bower_components/paper-fab/paper-fab.html">
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
 
 <link rel="import" href="my-icons.html">
 
@@ -58,6 +62,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       .drawer-list a.subroute {
         padding-left: 32px;
       }
+	  paper-button {
+		background-color: #68c122;
+	  }
 	  [hide] {
 		display: none;
 	  }
@@ -66,6 +73,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 	
 	<dom-module id="tab-renglones">
 	  <template>
+		
 		{{renglones1}}
 	  </template>
 	  <script>
@@ -86,20 +94,89 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 	
 	
 	<dom-module id="tab-prods">
-	  <template>
-		{{pedido1}}
-	  </template>
-	  <script>
+	 <template>
+	 <style>
+	  .card {
+		box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12), 0 3px 1px -2px rgba(0, 0, 0, 0.2);
+		padding: 14px;
+		margin: 10px;
+		border-radius: 5px;
+		background-color: #fff;
+		color: #757575;
+	  }
+	  #prod_src {
+		margin-left: 12px;
+		width: 8em;
+	  }
+	  paper-fab {
+		background-color: rgb(128, 128, 255);
+		color: white;
+	  }
+	  #loc-button {
+		background-color: rgb(128, 128, 255);
+		color: white;
+		//position: absolute;
+		border-radius: 50%;
+		min-width: 0px;
+		padding:2px;
+		//top:12px;
+		//left: 150px;
+      }
+	  /*#find-button {
+		position: absolute;
+		top:12px;
+		left: 225px;
+      }*/
+	  .row {
+		margin: 3px 5px 0px 5px;
+		padding: 5px;
+		background-color: white;
+	  }
+	  .desc {
+		opacity: .87;
+	  }
+	  .existencia {
+		color:green;
+		opacity:.7;
+	  }
+	  .precio {
+		opacity: .54;
+	  }
+	 </style>
+		<iron-ajax id="ajax" method='POST' handle-as="json" on-response="load_data" on-error="ajax_error"></iron-ajax>
+		
+		<paper-button on-click="get_productos" style="margin: 20px 30px;">Cargar Productos</paper-button>
+		<div>{{msg}}</div>
+		<div style="display:flex">
+			<paper-input id="prod_src" floatinglabel label="Producto"></paper-input>
+			<!--<paper-button mini id="loc-button" on-click="change_loc">{{loc}}</paper-button>-->
+			<paper-fab mini id="find-button" icon="arrow-forward" on-click="filter"></paper-fab>
+			<!--<paper-fab mini id="sync-button" icon="notification:sync" on-click="sync"></paper-fab>-->
+		</div>
+		<template id="mytemplate" is="dom-repeat" items="{{filtered_data}}">
+		  <div class="card">
+			<strong class="desc">{{item.prd}}</strong>
+			<br>
+			<strong class="existencia">({{item.ex}} Unds)</strong>
+			<small class="precio" valor={{item.prc}}>Precio: {{item.prc}}</small>
+		  </div>
+		</template>
+	 </template>
+	<script>
 		Polymer({
 			is: 'tab-prods',
 			ready: function() {
-				
-				this.renglones = [
+				if (localStorage.getItem("prod_data") === null)
+					this.productos = []
+				 else
+				    this.productos = JSON.parse(localStorage.getItem("prod_data"))
+				this.msg = 'Cantidad Productos: '+this.productos.length
+				this.filtered_data = []
+				/*this.renglones = [
 					{ cod: 100, unds: 25, precio: 11.2 },
 					{ cod: 120, unds: 45, precio: 24.5 },
 					{ cod: 87,  unds: 11, precio: 123.75  },
 				]
-				
 				setTimeout(function(){
 					var app_pedido = document.getElementById('app_pedido')
 					app_pedido.agregar_renglon({ cod: 100, unds: 25, precio: 11.2 })
@@ -109,8 +186,50 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 					this.pedido = app_pedido.total_pedido() 
 				
 					this.pedido1 = JSON.stringify(this.pedido)
-				}, 1000);
+				}, 1000);*/
 				//this.fire('rengloneschg')
+			},
+			filter: function() {
+				this.filtered_data=[]
+				if (this.$.prod_src.value.length >= 3)
+				{
+					var filtered_d = []
+					for (i=0; i<this.productos.length; i++)
+					if (this.productos[i].prd.toLowerCase().indexOf(this.$.prod_src.value.toLowerCase()) > -1)
+					{
+					//if (this.loc == 'CDA') this.data[i].existencia = this.data[i].existencia_cda
+					//if (this.loc == 'CDG') this.data[i].existencia = this.data[i].existencia_cdg
+						if (this.productos[i].ex != -1) filtered_d.push(this.productos[i])
+					}
+					this.filtered_data = filtered_d
+					filtered_d = []
+				}
+				else
+					alert("El Filtro debe tener al menos 3 caracteres")
+			},
+			get_productos: function() {
+				this.$.ajax.url = 'http://e0c4cfea.ngrok.io/proddata'
+				this.$.ajax.contentType="application/json"
+				this.$.ajax.body = {"my_key": "v3nt4m0v1l.123"}
+				this.msg = 'Cargando...'
+				this.$.ajax.generateRequest()
+			},
+			load_data: function() {
+				
+				if (this.$.ajax.lastResponse.err)
+					this.msg = this.$.ajax.lastResponse.err
+				else
+				{
+					localStorage["prod_data"] = JSON.stringify(this.$.ajax.lastResponse)
+					this.productos = JSON.parse(localStorage["prod_data"])
+					this.msg = 'Cargados '+this.$.ajax.lastResponse.length+' Productos'
+				}
+			},
+			ajax_error: function() {
+				console.log(this.$.ajax.lastError)
+				//alert("<%= lng('Error Processing Request: ')%>", this.$.ajax.lastError)
+				this.msg = 'Error Cargando Productos'
+				//alert(this.msg)
 			}
 		})
 	  </script>
@@ -136,7 +255,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		   <paper-input id="unds" value={{pedido.unds}} label="Unidades" style="width: 70px; padding-left:7px;" readonly></paper-input>
 			<paper-input id="mto" value={{pedido.mto}} label="Total Monto" style="width: 125px; padding-left:7px;" readonly></paper-input>
 		</div>
-		<paper-button style="background-color: #68c122; margin: 20px 80px;">Enviar Pedido</paper-button>
+		<paper-button style="margin: 20px 80px;">Enviar Pedido</paper-button>
 	  </template>
 	  <script>
 		Polymer({
@@ -221,10 +340,10 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 			value: 'Prueba 1'
 		}*/
 	  },
-	  
 	  ready: function() {
 		this.titulo = 'Pedido'
 		this.pedido = []
+		this.cliente = []
 	  },
 	  agregar_renglon: function(renglon) {
 		console.log('Agregando renglon: ', renglon)
@@ -246,7 +365,6 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 			total.unds += this.pedido[i].unds
 			total.mto += (this.pedido[i].unds * this.pedido[i].precio)
 		}
-		/** Return total skus, unds, monto **/
 		console.log('total pedido', total)
 		return total
 	  },
