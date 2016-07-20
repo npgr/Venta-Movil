@@ -62,6 +62,14 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       .drawer-list a.subroute {
         padding-left: 32px;
       }
+	  .card {
+		box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12), 0 3px 1px -2px rgba(0, 0, 0, 0.2);
+		padding: 14px;
+		margin: 10px;
+		border-radius: 5px;
+		background-color: #fff;
+		color: #757575;
+	  }
 	  paper-button {
 		background-color: #68c122;
 	  }
@@ -74,7 +82,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 	<dom-module id="tab-renglones">
 	  <template>
 		
-		{{renglones1}}
+		{{renglones_txt}}
 	  </template>
 	  <script>
 		Polymer({
@@ -85,8 +93,13 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 					value: function() { return {}; }
 				}
 			},
-			view: function() {
-				this.renglones1 = JSON.stringify(this.renglones)
+			ready: function() {
+				this.app_pedido = document.getElementById('app_pedido')
+			},
+			set_renglones: function(pedido) {
+				//this.renglones = this.app_pedido.get_pedido()
+				this.renglones = pedido
+				this.renglones_txt = JSON.stringify(this.renglones)
 			}
 		})
 	  </script>
@@ -96,14 +109,6 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 	<dom-module id="tab-prods">
 	 <template>
 	 <style>
-	  .card {
-		box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12), 0 3px 1px -2px rgba(0, 0, 0, 0.2);
-		padding: 14px;
-		margin: 10px;
-		border-radius: 5px;
-		background-color: #fff;
-		color: #757575;
-	  }
 	  #prod_src {
 		margin-left: 12px;
 		width: 8em;
@@ -159,6 +164,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 			<br>
 			<strong class="existencia">({{item.ex}} Unds)</strong>
 			<small class="precio" valor={{item.prc}}>Precio: {{item.prc}}</small>
+			<paper-input id="{{item.id}}" prd="{{item.prd}}" prc="{{item.prc}}" type="number" label="Pedido" style="width: 80px;padding-top: 0px; margin-top:0px;" on-change="pedir_renglon"></paper-input> 
 		  </div>
 		</template>
 	 </template>
@@ -166,29 +172,35 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		Polymer({
 			is: 'tab-prods',
 			ready: function() {
+				/*var prods = [
+					{ id: 100, prd: 'ATAMEL JBE x 100MG', ex: 25, prc: 11.2 },
+					{ id: 120, prd: 'ATAMEL TAB x 250MG', ex: 45, prc: 24.5, psico: 'P' },
+					{ id: 87,  prd: 'ATAMEL COMP x 80MG', ex: 11, prc: 123.75  },
+					{ id: 87,  prd: 'ATAMELCO TAB x 180MG', ex: 65, prc: 87.75  },
+					{ id: 87,  prd: 'CATAFLAM SOB x 10 de 5MG', ex: 1200, prc: 87.75  },
+					{ id: 87,  prd: 'CATAFLAM SOB x 20 de 5MG', ex: 200, prc: 325.8  },
+					{ id: 87,  prd: 'CATAFLAM COMP x 25 de 2,5MG', ex: 867, prc: 437  }
+				]
+				localStorage["prod_data"] = JSON.stringify(prods)*/
+				this.app_pedido = document.getElementById('app_pedido')
 				if (localStorage.getItem("prod_data") === null)
 					this.productos = []
 				 else
 				    this.productos = JSON.parse(localStorage.getItem("prod_data"))
 				this.msg = 'Cantidad Productos: '+this.productos.length
 				this.filtered_data = []
-				/*this.renglones = [
-					{ cod: 100, unds: 25, precio: 11.2 },
-					{ cod: 120, unds: 45, precio: 24.5 },
-					{ cod: 87,  unds: 11, precio: 123.75  },
-				]
-				setTimeout(function(){
-					var app_pedido = document.getElementById('app_pedido')
-					app_pedido.agregar_renglon({ cod: 100, unds: 25, precio: 11.2 })
-					app_pedido.agregar_renglon({ cod: 120, unds: 45, precio: 24.5 })
-					app_pedido.agregar_renglon({ cod: 87,  unds: 11, precio: 123.75  })
-				
-					this.pedido = app_pedido.total_pedido() 
-				
-					this.pedido1 = JSON.stringify(this.pedido)
-				}, 1000);*/
-				//this.fire('rengloneschg')
 			},
+			pedir_renglon: function(e, detail) {
+				//alert("exito")
+				var renglon = {
+					id: e.target.domHost.id,
+					prd: e.target.domHost.prd,
+					prc: e.target.domHost.prc,
+					unds: Number(e.target.value)
+				}
+				//console.log(renglon)
+				this.app_pedido.agregar_renglon(renglon)
+			}, 
 			filter: function() {
 				this.filtered_data=[]
 				if (this.$.prod_src.value.length >= 3)
@@ -243,7 +255,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		<style>
 			paper-input { margin-left: 12px; }
 		</style>
-		<paper-input id="clte" value={{cliente.nombre}} label="Cliente" style="width: 300px;" readonly></paper-input>
+		<h4 style="margin: 15px 0px 0px 15px;">> Cliente</h4>
+		<paper-input id="clte" value={{cliente.nombre}} placeholder="Seleccione un cliente..." noLabelFloat=true style="width: 300px;" readonly></paper-input>
+		<!--<input is="iron-input" value={{cliente.nombre}} style="width: 300px;" readonly></input>-->
 		<div style="display: flex">
 		   <paper-input id="disponible" value={{cliente.disponible}} label="Saldo Disponible" style="width: 120px;" readonly></paper-input>
 		   <paper-input id="dcto" value={{cliente.dcto_txt}} label="Dcto Comercial" style="width: 90px; padding-left:15px;" readonly></paper-input>
@@ -263,27 +277,22 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		is: 'tab-pedido',
 		
 		properties: {
-			pedido: {
+			/*pedido: {
 				type: Object,
 				value: function() { return {}; }
-			}
+			}*/
 		},
 		ready: function() {
-			
+			this.app_pedido = document.getElementById('app_pedido')
 			this.cliente = {
 				nombre: "FARMACIA LA REDOMA CATIA LA MAR 2006, C.A.".toLowerCase(),
 				disponible: 19500,
 				dcto: 11.3,
 				dcto_txt: '11.3 %'
 			}
-			
-			this.pedido = app_pedido.total_pedido() 
-			setTimeout(function(){ 
-				var app_pedido = document.getElementById('app_pedido')
-				this.pedido = app_pedido.total_pedido() 
-				//this.skus = pedido.skus
-			}, 2000);
-			
+		},
+		total_pedido: function(total) {
+			this.pedido = total
 		}
 		})
 	  </script>
@@ -318,7 +327,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           </app-toolbar>
         </app-header>
 
-			<tab-pedido id='view1'></tab-pedido>
+			<tab-pedido id='view1' hide></tab-pedido>
 			<tab-prods id='view2'  hide></tab-prods>
 			<tab-renglones id='view3' hide></tab-renglones>
 
@@ -341,14 +350,15 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		}*/
 	  },
 	  ready: function() {
-		this.titulo = 'Pedido'
+		//this.titulo = 'Pedido'
 		this.pedido = []
 		this.cliente = []
+		this.view1()
 	  },
 	  agregar_renglon: function(renglon) {
-		console.log('Agregando renglon: ', renglon)
+		//console.log('Agregando renglon: ', renglon)
 		this.pedido.push(renglon)
-		console.log('Pedido: ', this.pedido)
+		//console.log('Pedido: ', this.pedido)
 	  },
 	  cambiar_renglon: function() {
 		/** id producto y Cantidad **/
@@ -363,9 +373,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		{
 			total.skus ++
 			total.unds += this.pedido[i].unds
-			total.mto += (this.pedido[i].unds * this.pedido[i].precio)
+			total.mto += (this.pedido[i].unds * this.pedido[i].prc)
 		}
-		console.log('total pedido', total)
+		//console.log('total pedido', total)
 		return total
 	  },
 	  set_cliente: function(clte) {
@@ -383,6 +393,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 	  },
 	  view1: function() {
 		this.titulo = 'Pedido'
+		this.$.view1.total_pedido(this.total_pedido())
 		this.$.view2.setAttribute("hide","");
 		this.$.view3.setAttribute("hide","");
 		this.$.view1.removeAttribute("hide");
@@ -396,8 +407,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 	  },
 	  view3: function() {
 		this.titulo = 'Renglones'
-		this.$.view3.renglones = this.$.view2.renglones
-		this.$.view3.view()
+		this.$.view3.set_renglones(this.pedido)
 		this.$.view1.setAttribute("hide","");
 		this.$.view2.setAttribute("hide","");
 		this.$.view3.removeAttribute("hide");

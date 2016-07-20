@@ -1,0 +1,3 @@
+- calcular descuento comercial del pedido, por renglon
+
+mostrar cantidad pedida por producto (tab-producto)
