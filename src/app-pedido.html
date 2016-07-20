@@ -85,33 +85,46 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		 <div class="card">
 			<strong class="desc">{{item.prd}}</strong>
 			<br>
-			<paper-input id="{{item.id}}" prd="{{item.prd}}" prc="{{item.prc}}" type="number" label="Pedido" style="width: 80px;padding-top: 0px; margin-top:0px;" on-change="pedir_renglon" value={{item.unds}}></paper-input> 
-			<small class="precio">Precio: {{item.prc}}</small>
+			<div style="display:flex;">
+				<paper-input id="{{item.id}}" prd="{{item.prd}}" prc="{{item.prc}}" type="number" label="Pedido" style="width: 80px;padding-top: 0px; margin-top:0px;" on-change="cambiar_renglon" value={{item.unds}}></paper-input> 
+				<small class="precio" style="margin-left:15px;">Precio: {{item.prc}}</small>
+			</div>
 		  </div>
 		</template>
-		
-		{{renglones_txt}}
+		[[renglones_txt]]
 	  </template>
 	  <script>
 		Polymer({
 			is: 'tab-renglones',
 			properties: {
 				/*renglones: {
-					type: Object,
-					value: function() { return {}; }
+					type: Array,
+					value: function() { return []; }
 				}*/
 			},
 			ready: function() {
 				this.renglones = []
-				//this.app_pedido = document.getElementById('app_pedido')
+				this.app_pedido = document.getElementById('app_pedido')
 			},
 			set_renglones: function(pedido) {
+				//this.renglones = []
 				//this.renglones = this.app_pedido.get_pedido()
-				this.renglones = pedido
+				
+				this.renglones = pedido /** clone array */
+				//this.$.mytemplate2.render()
 				this.renglones_txt = JSON.stringify(this.renglones)
 			},
-			pedir_renglon: function() {
-			
+			cambiar_renglon: function() {
+				for (var i=0; i<this.renglones.length; i++)
+					if (typeof this.renglones[i].unds == 'string')
+					{
+						this.renglones[i].unds = Number(this.renglones[i].unds)
+						if (this.renglones[i].unds == 0)
+							this.renglones.splice(i, 1)
+						i = this.renglones.length
+					}
+				this.renglones_txt = JSON.stringify(this.renglones)
+				this.app_pedido.set_pedido(this.renglones)
 			}
 		})
 	  </script>
@@ -176,7 +189,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 			<br>
 			<strong class="existencia">({{item.ex}} Unds)</strong>
 			<small class="precio" valor={{item.prc}}>Precio: {{item.prc}}</small>
-			<paper-input id="{{item.id}}" prd="{{item.prd}}" prc="{{item.prc}}" type="number" label="Pedido" style="width: 80px;padding-top: 0px; margin-top:0px;" on-change="pedir_renglon"></paper-input> 
+			<paper-input id="{{item.id}}" prd="{{item.prd}}" prc="{{item.prc}}" value="{{item.unds || ''}}" type="number" label="Pedido" style="width: 80px;padding-top: 0px; margin-top:0px;" on-change="pedir_renglon"></paper-input> 
 		  </div>
 		</template>
 	 </template>
@@ -370,6 +383,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 	  agregar_renglon: function(renglon) {
 		//console.log('Agregando renglon: ', renglon)
 		this.pedido.push(renglon)
+		//this.pedido[renglon.id] = renglon
 		//console.log('Pedido: ', this.pedido)
 	  },
 	  cambiar_renglon: function() {
@@ -377,7 +391,10 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		/** si cantidad == cero, borrar renglon **/
 	  },
 	  get_pedido: function() {
-		return this.pedido
+		return this.pedido.slice(0)
+	  },
+	  set_pedido: function(renglones) {
+		this.pedido = renglones.slice(0)
 	  },
 	  total_pedido: function() {
 		var total = {	skus: 0,	unds: 0,	mto: 0  }
@@ -412,6 +429,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 	  },
 	  view2: function() {
 		this.titulo = 'Productos'
+		//this.$.view2.filter()
 		this.$.view1.setAttribute("hide","");
 		this.$.view3.setAttribute("hide","");
 		this.$.view2.removeAttribute("hide");
@@ -419,7 +437,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 	  },
 	  view3: function() {
 		this.titulo = 'Renglones'
-		this.$.view3.set_renglones(this.pedido)
+		this.$.view3.set_renglones(this.pedido.slice(0))
 		this.$.view1.setAttribute("hide","");
 		this.$.view2.setAttribute("hide","");
 		this.$.view3.removeAttribute("hide");
