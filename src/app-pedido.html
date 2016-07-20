@@ -81,7 +81,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 	
 	<dom-module id="tab-renglones">
 	  <template>
-		<template id="mytemplate2" is="dom-repeat" items="{{renglones}}">
+		<template id="mytemplate2" is="dom-repeat" items="{{renglones}}" observe="unds">
 		 <div class="card">
 			<strong class="desc">{{item.prd}}</strong>
 			<br>
@@ -107,11 +107,12 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 				this.app_pedido = document.getElementById('app_pedido')
 			},
 			set_renglones: function(pedido) {
-				//this.renglones = []
+				this.renglones = []
+				this.$.mytemplate2.render()
 				//this.renglones = this.app_pedido.get_pedido()
 				
 				this.renglones = pedido /** clone array */
-				//this.$.mytemplate2.render()
+				
 				this.renglones_txt = JSON.stringify(this.renglones)
 			},
 			cambiar_renglon: function() {
@@ -189,7 +190,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 			<br>
 			<strong class="existencia">({{item.ex}} Unds)</strong>
 			<small class="precio" valor={{item.prc}}>Precio: {{item.prc}}</small>
-			<paper-input id="{{item.id}}" prd="{{item.prd}}" prc="{{item.prc}}" value="{{item.unds || ''}}" type="number" label="Pedido" style="width: 80px;padding-top: 0px; margin-top:0px;" on-change="pedir_renglon"></paper-input> 
+			<paper-input id="{{item.id}}" prd="{{item.prd}}" prc="{{item.prc}}" value="{{item.unds}}" type="number" label="Pedido" style="width: 80px;padding-top: 0px; margin-top:0px;" on-change="pedir_renglon"></paper-input> 
 		  </div>
 		</template>
 	 </template>
@@ -228,21 +229,36 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 			}, 
 			filter: function() {
 				this.filtered_data=[]
+				this.$.mytemplate.render()
 				if (this.$.prod_src.value.length >= 3)
 				{
+					this.filtered_data = []
 					var filtered_d = []
 					for (i=0; i<this.productos.length; i++)
 					if (this.productos[i].prd.toLowerCase().indexOf(this.$.prod_src.value.toLowerCase()) > -1)
 					{
 					//if (this.loc == 'CDA') this.data[i].existencia = this.data[i].existencia_cda
 					//if (this.loc == 'CDG') this.data[i].existencia = this.data[i].existencia_cdg
+						
 						if (this.productos[i].ex != -1) filtered_d.push(this.productos[i])
+					}
+					for (var i=0; i<filtered_d.length; i++)
+					{
+						var unds = this.app_pedido.get_unds(filtered_d[i].id)
+						if (unds != -1) filtered_d[i].unds = unds
+							else filtered_d[i].unds = ''
 					}
 					this.filtered_data = filtered_d
 					filtered_d = []
 				}
 				else
 					alert("El Filtro debe tener al menos 3 caracteres")
+			},
+			has_filter: function() {
+				if (this.$.prod_src.value.length >= 3)
+					return true
+				 else
+					return false
 			},
 			get_productos: function() {
 				this.$.ajax.url = 'http://e0c4cfea.ngrok.io/proddata'
@@ -381,14 +397,23 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		this.view1()
 	  },
 	  agregar_renglon: function(renglon) {
-		//console.log('Agregando renglon: ', renglon)
-		this.pedido.push(renglon)
-		//this.pedido[renglon.id] = renglon
-		//console.log('Pedido: ', this.pedido)
-	  },
-	  cambiar_renglon: function() {
-		/** id producto y Cantidad **/
-		/** si cantidad == cero, borrar renglon **/
+		
+		var index = -1
+		for (var i=0; i<this.pedido.length; i++)
+		  if (this.pedido[i].id == renglon.id)
+		  {
+			index = i
+			i = this.pedido.length
+		  }
+		if (index == -1)		
+			this.pedido.push(renglon)
+		else
+		{
+			if (renglon.unds != 0)
+				this.pedido[index].unds = renglon.unds
+			 else
+				this.pedido.slice(index,1)
+		}
 	  },
 	  get_pedido: function() {
 		return this.pedido.slice(0)
@@ -413,6 +438,18 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 	  get_cliente: function() {
 		return this.cliente
 	  },
+	  get_unds: function(id) {
+		var unds = -1
+		for (var i=0; i < this.pedido.length; i++)
+		{
+			if (id == this.pedido[i].id)
+			{
+				unds = this.pedido[i].unds
+				i = this.pedido.length
+			}
+		}
+		return unds
+	  },
 	  full: function() {
 	  
 		var el = document.getElementById("my_app"); 
@@ -429,7 +466,11 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 	  },
 	  view2: function() {
 		this.titulo = 'Productos'
-		//this.$.view2.filter()
+		if (this.$.view2.has_filter())
+		{
+			console.log('reload view2')
+			this.$.view2.filter()
+		}
 		this.$.view1.setAttribute("hide","");
 		this.$.view3.setAttribute("hide","");
 		this.$.view2.removeAttribute("hide");
