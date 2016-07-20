@@ -81,6 +81,14 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 	
 	<dom-module id="tab-renglones">
 	  <template>
+		<template id="mytemplate2" is="dom-repeat" items="{{renglones}}">
+		 <div class="card">
+			<strong class="desc">{{item.prd}}</strong>
+			<br>
+			<paper-input id="{{item.id}}" prd="{{item.prd}}" prc="{{item.prc}}" type="number" label="Pedido" style="width: 80px;padding-top: 0px; margin-top:0px;" on-change="pedir_renglon" value={{item.unds}}></paper-input> 
+			<small class="precio">Precio: {{item.prc}}</small>
+		  </div>
+		</template>
 		
 		{{renglones_txt}}
 	  </template>
@@ -88,18 +96,22 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		Polymer({
 			is: 'tab-renglones',
 			properties: {
-				renglones: {
+				/*renglones: {
 					type: Object,
 					value: function() { return {}; }
-				}
+				}*/
 			},
 			ready: function() {
-				this.app_pedido = document.getElementById('app_pedido')
+				this.renglones = []
+				//this.app_pedido = document.getElementById('app_pedido')
 			},
 			set_renglones: function(pedido) {
 				//this.renglones = this.app_pedido.get_pedido()
 				this.renglones = pedido
 				this.renglones_txt = JSON.stringify(this.renglones)
+			},
+			pedir_renglon: function() {
+			
 			}
 		})
 	  </script>
