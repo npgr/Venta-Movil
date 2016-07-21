@@ -374,8 +374,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 				
 			if (this.$.ajax.lastResponse.err)
 				this.msg = 'Error' + this.$.ajax.lastResponse.err
-			else if (this.$.ajax.lastResponse.msg)
-				this.msg = this.$.ajax.lastResponse.msg
+			else if (this.$.ajax.lastResponse.pdd)
+				this.msg = 'Creado Pedido Móvil Nro '+this.$.ajax.lastResponse.pdd
 			else
 				this.msg = 'Respuesta inválida Servidor: '+this.$.ajax.lastResponse
 		},
