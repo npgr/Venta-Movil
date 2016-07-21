@@ -1,1 +1,1 @@
-vulcanize --inline-css --inline-scripts index2.html > index3.html
+vulcanize --inline-css --inline-scripts Pedido.html > Pedido2.html

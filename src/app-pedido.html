@@ -304,6 +304,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		<style>
 			paper-input { margin-left: 12px; }
 		</style>
+		<iron-ajax id="ajax" method='POST' handle-as="json" on-response="load_data" on-error="ajax_error"></iron-ajax>
 		<h4 style="margin: 15px 0px 0px 15px;">> Cliente</h4>
 		<paper-input id="clte" value={{cliente.nombre}} placeholder="Seleccione un cliente..." noLabelFloat=true style="width: 300px;" readonly></paper-input>
 		<!--<input is="iron-input" value={{cliente.nombre}} style="width: 300px;" readonly></input>-->
@@ -318,7 +319,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		   <paper-input id="unds" value={{pedido.unds}} label="Unidades" style="width: 70px; padding-left:7px;" readonly></paper-input>
 			<paper-input id="mto" value={{pedido.mto}} label="Total Monto" style="width: 125px; padding-left:7px;" readonly></paper-input>
 		</div>
-		<paper-button style="margin: 20px 80px;">Enviar Pedido</paper-button>
+		<paper-button style="margin: 20px 80px;" on-click="enviar_pedido">Enviar Pedido</paper-button>
+		<br>
+		<h4>{{msg}}</h4>
 	  </template>
 	  <script>
 		Polymer({
@@ -334,6 +337,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		ready: function() {
 			this.app_pedido = document.getElementById('app_pedido')
 			this.cliente = {
+				id: 100,
 				nombre: "FARMACIA LA REDOMA CATIA LA MAR 2006, C.A.".toLowerCase(),
 				disponible: 19500,
 				dcto: 11.3,
@@ -342,6 +346,44 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		},
 		total_pedido: function(total) {
 			this.pedido = total
+		},
+		enviar_pedido: function() {
+			this.$.ajax.url = "http://ba43c833.ngrok.io/pedido/crear"
+			this.$.ajax.contentType="application/json"
+			
+			var rng = this.app_pedido.get_pedido()
+			for (var i=0; i<rng.length; i++)
+			{
+				delete rng[i].prd,
+				delete rng[i].prc
+			}
+			
+			var pedido = { 
+				"my_key": "v3nt4m0v1l.123", 
+				pedido: {
+					clte: this.cliente.id,
+					renglones:  rng
+				}
+			}
+			console.log(pedido)
+			this.$.ajax.body = pedido
+			this.msg = 'Enviando...'
+			this.$.ajax.generateRequest()
+		},
+		load_data: function() {
+				
+			if (this.$.ajax.lastResponse.err)
+				this.msg = 'Error' + this.$.ajax.lastResponse.err
+			else if (this.$.ajax.lastResponse.msg)
+				this.msg = this.$.ajax.lastResponse.msg
+			else
+				this.msg = 'Respuesta inválida Servidor: '+this.$.ajax.lastResponse
+		},
+		ajax_error: function() {
+			console.log(this.$.ajax.lastError)
+			//alert("<%= lng('Error Processing Request: ')%>", this.$.ajax.lastError)
+			this.msg = 'Error Cargando Productos'
+			//alert(this.msg)
 		}
 		})
 	  </script>
