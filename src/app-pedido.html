@@ -81,12 +81,17 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 	
 	<dom-module id="tab-renglones">
 	  <template>
+		<div style="display: flex">
+		   <paper-input id="sku" value={{pedido.skus}} label="Productos" style="width: 60px;" readonly></paper-input>
+		   <paper-input id="unds" value={{pedido.unds}} label="Unidades" style="width: 70px; padding-left:7px;" readonly></paper-input>
+			<paper-input id="mto" value={{pedido.mto}} label="Total Monto" style="width: 125px; padding-left:7px;" readonly></paper-input>
+		</div>
 		<template id="mytemplate2" is="dom-repeat" items="{{renglones}}" observe="unds">
 		 <div class="card">
 			<strong class="desc">{{item.prd}}</strong>
 			<br>
 			<div style="display:flex;">
-				<paper-input id="{{item.id}}" prd="{{item.prd}}" prc="{{item.prc}}" type="number" label="Pedido" style="width: 80px;padding-top: 0px; margin-top:0px;" on-change="cambiar_renglon" value={{item.unds}}></paper-input> 
+				<paper-input id="{{item.id}}" prd="{{item.prd}}" prc="{{item.prc}}" type="number" style="width: 80px;padding-top: 0px; margin-top:0px;" on-change="cambiar_renglon" value={{item.unds}}></paper-input>
 				<small class="precio" style="margin-left:15px;">Precio: {{item.prc}}</small>
 			</div>
 		  </div>
@@ -112,6 +117,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 				//this.renglones = this.app_pedido.get_pedido()
 				
 				this.renglones = pedido /** clone array */
+				this.pedido = this.app_pedido.total_pedido()
 				
 				this.renglones_txt = JSON.stringify(this.renglones)
 			},
@@ -126,6 +132,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 					}
 				this.renglones_txt = JSON.stringify(this.renglones)
 				this.app_pedido.set_pedido(this.renglones)
+				this.pedido = this.app_pedido.total_pedido()
 			}
 		})
 	  </script>
@@ -183,6 +190,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 			<!--<paper-button mini id="loc-button" on-click="change_loc">{{loc}}</paper-button>-->
 			<paper-fab mini id="find-button" icon="arrow-forward" on-click="filter"></paper-fab>
 			<!--<paper-fab mini id="sync-button" icon="notification:sync" on-click="sync"></paper-fab>-->
+			<h5 style="margin-left:12px;">{{filtered_data.length}} prods</h5>
 		</div>
 		<template id="mytemplate" is="dom-repeat" items="{{filtered_data}}">
 		  <div class="card">
@@ -412,7 +420,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 			if (renglon.unds != 0)
 				this.pedido[index].unds = renglon.unds
 			 else
-				this.pedido.slice(index,1)
+				this.pedido.splice(index,1)
 		}
 	  },
 	  get_pedido: function() {
@@ -467,10 +475,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 	  view2: function() {
 		this.titulo = 'Productos'
 		if (this.$.view2.has_filter())
-		{
-			console.log('reload view2')
 			this.$.view2.filter()
-		}
 		this.$.view1.setAttribute("hide","");
 		this.$.view3.setAttribute("hide","");
 		this.$.view2.removeAttribute("hide");
