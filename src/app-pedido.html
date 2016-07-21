@@ -351,18 +351,17 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 			this.$.ajax.url = "http://ba43c833.ngrok.io/pedido/crear"
 			this.$.ajax.contentType="application/json"
 			
-			var rng = this.app_pedido.get_pedido()
+			var rng = this.app_pedido.get_pedido().slice(0)
+			var rng2 = []
 			for (var i=0; i<rng.length; i++)
-			{
-				delete rng[i].prd,
-				delete rng[i].prc
-			}
+				rng2.push({id: rng[i].id, unds: rng[i].unds})
+			rng=[]
 			
 			var pedido = { 
 				"my_key": "v3nt4m0v1l.123", 
 				pedido: {
 					clte: this.cliente.id,
-					renglones:  rng
+					renglones:  rng2
 				}
 			}
 			console.log(pedido)
