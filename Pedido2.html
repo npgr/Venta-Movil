@@ -21400,6 +21400,10 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 	  paper-button {
 		background-color: #68c122;
 	  }
+	  paper-fab {
+		background-color: rgb(128, 128, 255);
+		color: white;
+	  }
 	  [hide] {
 		display: none;
 	  }
@@ -21409,17 +21413,18 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 	<dom-module id="tab-renglones" assetpath="src/">
 	  <template>
 		<div style="display: flex">
-		   <paper-input id="sku" value="{{pedido.skus}}" label="Productos" style="width: 60px;" readonly=""></paper-input>
-		   <paper-input id="unds" value="{{pedido.unds}}" label="Unidades" style="width: 70px; padding-left:7px;" readonly=""></paper-input>
-			<paper-input id="mto" value="{{pedido.mto}}" label="Total Monto" style="width: 125px; padding-left:7px;" readonly=""></paper-input>
+		   <paper-input id="sku" value="[[pedido.skus]]" label="Productos" style="width: 60px;" readonly=""></paper-input>
+		   <paper-input id="unds" value="[[pedido.unds]]" label="Unidades" style="width: 70px; padding-left:7px;" readonly=""></paper-input>
+			<paper-input id="mto" value="[[pedido.mto]]" label="Total Monto" style="width: 125px; padding-left:7px;" readonly=""></paper-input>
 		</div>
 		<template id="mytemplate2" is="dom-repeat" items="{{renglones}}" observe="unds">
 		 <div class="card">
 			<strong class="desc">{{item.prd}}</strong>
 			<br>
 			<div style="display:flex;">
-				<paper-input id="{{item.id}}" prd="{{item.prd}}" prc="{{item.prc}}" type="number" style="width: 80px;padding-top: 0px; margin-top:0px;" on-change="cambiar_renglon" value="{{item.unds}}"></paper-input>
+				<paper-input type="number" style="width: 80px;padding-top: 0px; margin-top:0px;" on-change="cambiar_renglon" value="{{item.unds}}" no-label-float=""></paper-input>
 				<small class="precio" style="margin-left:15px;">Precio: {{item.prc}}</small>
+				<paper-fab mini="" id="{{item.id}}" on-click="borrar" style="margin-left:15px;"></paper-fab>
 			</div>
 		  </div>
 		</template>
@@ -21448,6 +21453,21 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 				
 				this.renglones_txt = JSON.stringify(this.renglones)
 			},
+			borrar: function(e) {
+				var id = e.target.id
+				for (var i=0; i<this.renglones.length; i++)
+				{
+					if (this.renglones[i].id == id)
+					{
+						this.renglones.splice(i,1)
+						i = this.renglones.length
+					}
+				}
+				this.renglones_txt = JSON.stringify(this.renglones)
+				this.$.mytemplate2.render()
+				this.app_pedido.set_pedido(this.renglones)
+				this.pedido = this.app_pedido.total_pedido()
+			},
 			cambiar_renglon: function() {
 				for (var i=0; i<this.renglones.length; i++)
 					if (typeof this.renglones[i].unds == 'string')
@@ -21472,10 +21492,6 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 	  #prod_src {
 		margin-left: 12px;
 		width: 8em;
-	  }
-	  paper-fab {
-		background-color: rgb(128, 128, 255);
-		color: white;
 	  }
 	  #loc-button {
 		background-color: rgb(128, 128, 255);
@@ -21524,8 +21540,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 			<strong class="desc">{{item.prd}}</strong>
 			<br>
 			<strong class="existencia">({{item.ex}} Unds)</strong>
-			<small class="precio" valor="{{item.prc}}">Precio: {{item.prc}}</small>
-			<paper-input id="{{item.id}}" prd="{{item.prd}}" prc="{{item.prc}}" value="{{item.unds}}" type="number" label="Pedido" style="width: 80px;padding-top: 0px; margin-top:0px;" on-change="pedir_renglon"></paper-input> 
+			<small class="precio" valor="{{item.prc}}" style="margin-left:20px;">Precio: {{item.prc}}</small>
+			<paper-input id="{{item.id}}" prd="{{item.prd}}" prc="{{item.prc}}" value="{{item.unds}}" type="number" style="width: 80px;padding-top: 0px; margin-top:0px;" on-change="pedir_renglon" no-label-float=""></paper-input> 
 		  </div>
 		</template>
 	 </template>
@@ -21646,9 +21662,10 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		   <paper-input id="unds" value="{{pedido.unds}}" label="Unidades" style="width: 70px; padding-left:7px;" readonly=""></paper-input>
 			<paper-input id="mto" value="{{pedido.mto}}" label="Total Monto" style="width: 125px; padding-left:7px;" readonly=""></paper-input>
 		</div>
-		<paper-button style="margin: 20px 80px;" on-click="enviar_pedido">Enviar Pedido</paper-button>
-		<br>
-		<h5>{{msg}}</h5>
+			<paper-button style="margin: 25px 30px;" on-click="enviar_pedido">Enviar</paper-button>
+			<paper-button style="margin: 25px 30px;" on-click="guardar_pedido">Guardar</paper-button>
+		
+		<h4 style="margin-left:30px;">{{msg}}</h4>
 	  </template>
 	  <script>
 		Polymer({
@@ -21678,18 +21695,17 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 			this.$.ajax.url = "http://ba43c833.ngrok.io/pedido/crear"
 			this.$.ajax.contentType="application/json"
 			
-			var rng = this.app_pedido.get_pedido()
+			var rng = this.app_pedido.get_pedido().slice(0)
+			var rng2 = []
 			for (var i=0; i<rng.length; i++)
-			{
-				delete rng[i].prd,
-				delete rng[i].prc
-			}
+				rng2.push({id: rng[i].id, unds: rng[i].unds})
+			rng=[]
 			
 			var pedido = { 
 				"my_key": "v3nt4m0v1l.123", 
 				pedido: {
 					clte: this.cliente.id,
-					renglones:  rng
+					renglones:  rng2
 				}
 			}
 			console.log(pedido)
@@ -21701,15 +21717,15 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 				
 			if (this.$.ajax.lastResponse.err)
 				this.msg = 'Error' + this.$.ajax.lastResponse.err
-			else if (this.$.ajax.lastResponse.msg)
-				this.msg = this.$.ajax.lastResponse.msg
+			else if (this.$.ajax.lastResponse.pdd)
+				this.msg = 'Creado Pedido Móvil Nro '+this.$.ajax.lastResponse.pdd
 			else
 				this.msg = 'Respuesta inválida Servidor: '+this.$.ajax.lastResponse
 		},
 		ajax_error: function() {
 			console.log(this.$.ajax.lastError)
 			//alert("<%= lng('Error Processing Request: ')%>", this.$.ajax.lastError)
-			this.msg = 'Error Cargando Productos'
+			this.msg = 'Error Enviando Pedido'
 			//alert(this.msg)
 		}
 		})

@@ -20,10 +20,12 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 <link rel="import" href="../bower_components/paper-button/paper-button.html">
 <link rel="import" href="../bower_components/iron-collapse/iron-collapse.html">
 <link rel="import" href="../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../bower_components/iron-iconset-svg/iron-iconset-svg.html">
 <link rel="import" href="../bower_components/paper-fab/paper-fab.html">
 <link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
 
-<link rel="import" href="my-icons.html">
+<!--<link rel="import" href="my-icons.html">-->
 
 <dom-module id="app-pedido">
 
@@ -97,7 +99,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 			<div style="display:flex;">
 				<paper-input type="number" style="width: 80px;padding-top: 0px; margin-top:0px;" on-change="cambiar_renglon" value={{item.unds}} no-label-float></paper-input>
 				<small class="precio" style="margin-left:15px;">Precio: {{item.prc}}</small>
-				<paper-fab mini id="{{item.id}}" on-click="borrar" style="margin-left:15px;"></paper-fab>
+				<paper-fab mini id="{{item.id}}" icon="remove" on-click="borrar" style="margin-left:15px;"></paper-fab>
 			</div>
 		  </div>
 		</template>
@@ -198,15 +200,14 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 	  }
 	 </style>
 		<iron-ajax id="ajax" method='POST' handle-as="json" on-response="load_data" on-error="ajax_error"></iron-ajax>
-		
 		<paper-button on-click="get_productos" style="margin: 20px 30px;">Cargar Productos</paper-button>
 		<div>{{msg}}</div>
 		<div style="display:flex">
-			<paper-input id="prod_src" floatinglabel label="Producto"></paper-input>
+			<paper-input id="prod_src" label="Producto" no-label-float></paper-input>
 			<!--<paper-button mini id="loc-button" on-click="change_loc">{{loc}}</paper-button>-->
-			<paper-fab mini id="find-button" icon="arrow-forward" on-click="filter"></paper-fab>
+			<paper-fab mini id="find-button" icon="arrow-forward" style="margin-left:7px;" on-click="filter"></paper-fab>
 			<!--<paper-fab mini id="sync-button" icon="notification:sync" on-click="sync"></paper-fab>-->
-			<h5 style="margin-left:12px;">{{filtered_data.length}} prods</h5>
+			<strong style="margin-left:15px;margin-top:10px;">{{filtered_data.length}} prods</strong>
 		</div>
 		<template id="mytemplate" is="dom-repeat" items="{{filtered_data}}">
 		  <div class="card">
@@ -321,22 +322,23 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 			paper-input { margin-left: 12px; }
 		</style>
 		<iron-ajax id="ajax" method='POST' handle-as="json" on-response="load_data" on-error="ajax_error"></iron-ajax>
-		<h4 style="margin: 15px 0px 0px 15px;">> Cliente</h4>
-		<paper-input id="clte" value={{cliente.nombre}} placeholder="Seleccione un cliente..." noLabelFloat=true style="width: 300px;" readonly></paper-input>
+		<h4 style="margin: 25px 0px 0px 15px;"><iron-icon icon="chevron-right"></iron-icon>Cliente</h4>
+		<paper-input id="clte" value={{cliente.nombre}} placeholder="Seleccione un cliente..." no-label-float style="width: 300px;" readonly></paper-input>
 		<!--<input is="iron-input" value={{cliente.nombre}} style="width: 300px;" readonly></input>-->
 		<div style="display: flex">
 		   <paper-input id="disponible" value={{cliente.disponible}} label="Saldo Disponible" style="width: 120px;" readonly></paper-input>
 		   <paper-input id="dcto" value={{cliente.dcto_txt}} label="Dcto Comercial" style="width: 90px; padding-left:15px;" readonly></paper-input>
 		</div>
-		<!--<br>-->
-		<h4 style="margin: 8px 15px;">> Pedido</h4>
+		<h4 style="margin: 25px 15px 5px 15px;"><iron-icon icon="chevron-right"></iron-icon>Pedido</h4>
 		<div style="display: flex">
 		   <paper-input id="sku" value={{pedido.skus}} label="Productos" style="width: 60px;" readonly></paper-input>
 		   <paper-input id="unds" value={{pedido.unds}} label="Unidades" style="width: 70px; padding-left:7px;" readonly></paper-input>
 			<paper-input id="mto" value={{pedido.mto}} label="Total Monto" style="width: 125px; padding-left:7px;" readonly></paper-input>
-		</div style="display:flex">
-			<paper-button style="margin: 25px 30px;" on-click="enviar_pedido">Enviar</paper-button>
-			<paper-button style="margin: 25px 30px;" on-click="guardar_pedido">Guardar</paper-button>
+		</div>
+		<br>
+		<div style="color:black;">
+			<paper-button style="margin-top: 30px;margin-left:30px;" on-click="enviar_pedido"><iron-icon icon="backup"></iron-icon><span style="margin-left:3px;margin-right:5px;">Enviar</span></paper-button>
+			<paper-button style="margin: 25px 20px;" on-click="guardar_pedido"><iron-icon icon="save"></iron-icon><span style="margin-left:3px;margin-right:5px;">Guardar</span></paper-button>
 		</div>
 		<h4 style="margin-left:30px;">{{msg}}</h4>
 	  </template>
@@ -404,6 +406,26 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		})
 	  </script>
 	</dom-module>
+	
+	<!--*** MENU ***-->
+	<!--************-->
+	
+	<dom-module id="app-menu">
+	  <template>
+		<!--<div style="margin-left: -16px; height: 200px; width: 256px; background-color: #009688;">-->
+			<h4 style="margin: 50px 50px;z-index: 10;">Farvenca Móvil</h4>
+		<!--</div>-->
+		<!--<paper-toolbar class="tall">
+			Menu
+		</paper-toolbar>-->
+	  </template>
+	  <script>
+		Polymer({
+
+		is: 'app-menu'
+		})
+	  </script>
+	</dom-module>
 
 	<!--*** MAIN ***-->
 	<!--************-->
@@ -412,7 +434,26 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
       <!-- Drawer content -->
       <app-drawer>
-        <app-toolbar>Menu</app-toolbar>
+        <app-toolbar style="background-color: #009688;color:white;height: 180px;">
+			<div bottom-item style="margin-left: 90px;margin-bottom: 20px;">Farvenca Móvil</div>
+			<!--<app-menu style="margin-left: 0px;"></app-menu>-->
+		</app-toolbar>
+		<paper-icon-item>
+			<iron-icon icon="inbox" item-icon></iron-icon>
+			Inbox
+		</paper-icon-item>
+		<paper-icon-item>
+			<iron-icon icon="star" item-icon></iron-icon>
+			Starred
+		</paper-icon-item>
+		<paper-icon-item>
+			<div class="avatar blue" item-icon></div>
+			Alphonso Engelking
+		</paper-icon-item>
+		<paper-icon-item>
+			<div class="avatar" item-icon></div>
+			Angela Decker
+		</paper-icon-item>
       </app-drawer>
 
       <!-- Main content -->
@@ -550,5 +591,4 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     });
 
   </script>
-
 </dom-module>
