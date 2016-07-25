@@ -79,6 +79,15 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		background-color: rgb(128, 128, 255);
 		color: white;
 	  }
+	  app-drawer {
+		--app-drawer-width: 220px;
+	  }
+	  .menu_item {
+		margin : 20px 15px;
+	  }
+	  iron-icon {
+		color: gray;
+	  }
 	  [hide] {
 		display: none;
 	  }
@@ -99,7 +108,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 			<div style="display:flex;">
 				<paper-input type="number" style="width: 80px;padding-top: 0px; margin-top:0px;" on-change="cambiar_renglon" value={{item.unds}} no-label-float></paper-input>
 				<small class="precio" style="margin-left:15px;">Precio: {{item.prc}}</small>
-				<paper-fab mini id="{{item.id}}" icon="remove" on-click="borrar" style="margin-left:15px;"></paper-fab>
+				<paper-fab mini id="{{item.id}}" icon="close" on-click="borrar" style="margin-left:15px;"></paper-fab>
 			</div>
 		  </div>
 		</template>
@@ -200,7 +209,10 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 	  }
 	 </style>
 		<iron-ajax id="ajax" method='POST' handle-as="json" on-response="load_data" on-error="ajax_error"></iron-ajax>
-		<paper-button on-click="get_productos" style="margin: 20px 30px;">Cargar Productos</paper-button>
+		<paper-button on-click="get_productos" style="margin: 20px 50px;">
+			<iron-icon icon="autorenew" style="color: black;"></iron-icon>
+			Cargar Productos
+		</paper-button>
 		<div>{{msg}}</div>
 		<div style="display:flex">
 			<paper-input id="prod_src" label="Producto" no-label-float></paper-input>
@@ -319,7 +331,13 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 	<dom-module id="tab-pedido">
 	  <template>
 		<style>
-			paper-input { margin-left: 12px; }
+			paper-input { margin-left: 12px; 
+			paper-button {
+				margin-top: 40px;
+				padding-left: 25px;
+				padding-rigth: 25px;
+				width: 180px;
+			}
 		</style>
 		<iron-ajax id="ajax" method='POST' handle-as="json" on-response="load_data" on-error="ajax_error"></iron-ajax>
 		<h4 style="margin: 25px 0px 0px 15px;"><iron-icon icon="chevron-right"></iron-icon>Cliente</h4>
@@ -337,8 +355,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		</div>
 		<br>
 		<div style="color:black;">
-			<paper-button style="margin-top: 30px;margin-left:30px;" on-click="enviar_pedido"><iron-icon icon="backup"></iron-icon><span style="margin-left:3px;margin-right:5px;">Enviar</span></paper-button>
-			<paper-button style="margin: 25px 20px;" on-click="guardar_pedido"><iron-icon icon="save"></iron-icon><span style="margin-left:3px;margin-right:5px;">Guardar</span></paper-button>
+			<paper-button style="margin-left:30px;" on-click="enviar_pedido"><iron-icon icon="arrow-upward" on-click="full" style="color: black;" size=32></iron-icon>Enviar</paper-button>
+			<paper-button style="margin-left:30px;" on-click="guardar_pedido"><iron-icon icon="arrow-downward" on-click="full" style="color: black;" size=32></iron-icon>Guardar</paper-button>
 		</div>
 		<h4 style="margin-left:30px;">{{msg}}</h4>
 	  </template>
@@ -434,26 +452,30 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
       <!-- Drawer content -->
       <app-drawer>
-        <app-toolbar style="background-color: #009688;color:white;height: 180px;">
-			<div bottom-item style="margin-left: 90px;margin-bottom: 20px;">Farvenca Móvil</div>
+        <app-toolbar style="background-color: #009688;color:white;height: 120px;">
+			<div bottom-item style="margin-left: 70px;margin-bottom: 5px;">Farvenca Móvil</div>
 			<!--<app-menu style="margin-left: 0px;"></app-menu>-->
 		</app-toolbar>
-		<paper-icon-item>
-			<iron-icon icon="inbox" item-icon></iron-icon>
-			Inbox
-		</paper-icon-item>
-		<paper-icon-item>
-			<iron-icon icon="star" item-icon></iron-icon>
-			Starred
-		</paper-icon-item>
-		<paper-icon-item>
-			<div class="avatar blue" item-icon></div>
-			Alphonso Engelking
-		</paper-icon-item>
-		<paper-icon-item>
-			<div class="avatar" item-icon></div>
-			Angela Decker
-		</paper-icon-item>
+		<div class="menu_item">
+			<iron-icon icon="shopping-cart" item-icon></iron-icon>
+			Crear Pedido
+		</div>
+		<div class="menu_item">
+			<iron-icon icon="assignment" item-icon></iron-icon>
+			Pedidos Pendientes
+		</div>
+		<div class="menu_item">
+			<iron-icon icon="loyalty" item-icon></iron-icon>
+			Productos
+		</div>
+		<div class="menu_item">
+			<iron-icon icon="face" item-icon></iron-icon>
+			Clientes
+		</div>
+		<div class="menu_item">
+			<iron-icon icon="stars" item-icon></iron-icon>
+			Acerca de
+		</div>
       </app-drawer>
 
       <!-- Main content -->
@@ -464,7 +486,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 			<div top-item style="display: flex; justify-content: space-between; margin: 5px 15px;">
 				<paper-icon-button icon="menu" drawer-toggle></paper-icon-button>
 				<div main-title>{{titulo}}</div>
-				<div on-click="full">[ . . ]</div>
+				<paper-icon-button icon="open-with" on-click="full"></paper-icon-button>
+				<!--<iron-icon icon="" on-click="full" style="color: white;" size=32></iron-icon>-->
 			</div>
 			<paper-tabs bottom-item selected="0" <!--class="bottom self-end"--> >
 				<paper-tab on-click="view1">Ped</paper-tab>
