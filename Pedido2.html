@@ -21330,20 +21330,171 @@ element.
 
 <!--
 @license
-Copyright (c) 2016 The Polymer Project Authors. All rights reserved.
-This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
-The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
-The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Copyright (c) 2015 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE
+The complete set of authors may be found at http://polymer.github.io/AUTHORS
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS
 Code distributed by Google as part of the polymer project is also
-subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
---><iron-iconset-svg name="icons" size="24">
-<svg><defs>
-<g id="arrow-back"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"></path></g>
-<g id="menu"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"></path></g>
-<g id="chevron-right"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"></path></g>
-<g id="close"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path></g>
-</defs></svg>
-</iron-iconset-svg>
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS
+--><script>
+
+/**
+`iron-a11y-keys` provides a cross-browser interface for processing
+keyboard commands. The interface adheres to [WAI-ARIA best
+practices](http://www.w3.org/TR/wai-aria-practices/#kbd_general_binding).
+It uses an expressive syntax to filter key presses.
+
+## Basic usage
+
+The sample code below is a portion of a custom element. The goal is to call
+the `onEnter` method whenever the `paper-input` element is in focus and
+the `Enter` key is pressed.
+
+    <iron-a11y-keys id="a11y" target="[[target]]" keys="enter"
+                        on-keys-pressed="onEnter"></iron-a11y-keys>
+    <paper-input id="input"
+                 placeholder="Type something. Press enter. Check console."
+                 value="{{userInput::input}}"></paper-input>
+
+The custom element declares an `iron-a11y-keys` element that is bound to a
+property called `target`. The `target` property
+needs to evaluate to the `paper-input` node. `iron-a11y-keys` registers
+an event handler for the target node using Polymer's [annotated event handler
+syntax](https://www.polymer-project.org/1.0/docs/devguide/events.html#annotated-listeners). `{{userInput::input}}` sets the `userInput` property to the
+user's input on each keystroke.
+
+The last step is to link the two elements within the custom element's
+registration.
+
+    ...
+    properties: {
+      userInput: {
+        type: String,
+        notify: true,
+      },
+      target: {
+        type: Object,
+        value: function() {
+          return this.$.input;
+        }
+      },
+    },
+    onEnter: function() {
+      console.log(this.userInput);
+    }
+    ...
+
+## The `keys` attribute
+
+The `keys` attribute expresses what combination of keys triggers the event.
+
+The attribute accepts a space-separated, plus-sign-concatenated
+set of modifier keys and some common keyboard keys.
+
+The common keys are: `a-z`, `0-9` (top row and number pad), `*` (shift 8 and
+number pad), `F1-F12`, `Page Up`, `Page Down`, `Left Arrow`, `Right Arrow`,
+`Down Arrow`, `Up Arrow`, `Home`, `End`, `Escape`, `Space`, `Tab`, `Enter`.
+
+The modifier keys are: `Shift`, `Control`, `Alt`, `Meta`.
+
+All keys are expected to be lowercase and shortened. E.g.
+`Left Arrow` is `left`, `Page Down` is `pagedown`, `Control` is `ctrl`,
+`F1` is `f1`, `Escape` is `esc`, etc.
+
+### Grammar
+
+Below is the [EBNF](http://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_Form)
+Grammar of the `keys` attribute.
+
+    modifier = "shift" | "ctrl" | "alt" | "meta";
+    ascii = ? /[a-z0-9]/ ? ;
+    fnkey = ? f1 through f12 ? ;
+    arrow = "up" | "down" | "left" | "right" ;
+    key = "tab" | "esc" | "space" | "*" | "pageup" | "pagedown" |
+          "home" | "end" | arrow | ascii | fnkey;
+    keycombo = { modifier, "+" }, key ;
+    keys = keycombo, { " ", keycombo } ;
+
+### Example
+
+Given the following value for `keys`:
+
+`ctrl+shift+f7 up pagedown esc space alt+m`
+
+The event is fired if any of the following key combinations are fired:
+`Control` and `Shift` and `F7` keys, `Up Arrow` key, `Page Down` key,
+`Escape` key, `Space` key, `Alt` and `M` keys.
+
+### WAI-ARIA Slider Example
+
+The following is an example of the set of keys that fulfills WAI-ARIA's
+"slider" role [best
+practices](http://www.w3.org/TR/wai-aria-practices/#slider):
+
+    <iron-a11y-keys target="[[target]]" keys="left pagedown down"
+                    on-keys-pressed="decrement"></iron-a11y-keys>
+    <iron-a11y-keys target="[[target]]" keys="right pageup up"
+                    on-keys-pressed="increment"></iron-a11y-keys>
+    <iron-a11y-keys target="[[target]]" keys="home"
+                    on-keys-pressed="setMin"></iron-a11y-keys>
+    <iron-a11y-keys target=""[[target]] keys="end"
+                    on-keys-pressed="setMax"></iron-a11y-keys>
+
+The `target` properties must evaluate to a node. See the basic usage
+example above.
+
+Each of the values for the `on-keys-pressed` attributes must evalute
+to methods. The `increment` method should move the slider a set amount
+toward the maximum value. `decrement` should move the slider a set amount
+toward the minimum value. `setMin` should move the slider to the minimum
+value. `setMax` should move the slider to the maximum value.
+
+@demo demo/index.html
+*/
+
+
+
+  Polymer({
+    is: 'iron-a11y-keys',
+
+    behaviors: [
+      Polymer.IronA11yKeysBehavior
+    ],
+
+    properties: {
+      /** @type {?Node} */
+      target: {
+        type: Object,
+        observer: '_targetChanged'
+      },
+
+      keys: {
+        type: String,
+        reflectToAttribute: true,
+        observer: '_keysChanged'
+      }
+    },
+
+    attached: function() {
+      if (!this.target) {
+        this.target = this.parentNode;
+      }
+    },
+
+    _targetChanged: function(target) {
+      this.keyEventTarget = target;
+    },
+
+    _keysChanged: function() {
+      this.removeOwnKeyBindings();
+      this.addOwnKeyBinding(this.keys, '_fireKeysPressed');
+    },
+
+    _fireKeysPressed: function(event) {
+      this.fire('keys-pressed', event.detail, {});
+    }
+  });
+</script>
 <!--
 @license
 Copyright (c) 2016 The Polymer Project Authors. All rights reserved.
@@ -21352,7 +21503,9 @@ The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
 The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
 Code distributed by Google as part of the polymer project is also
 subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
---><dom-module id="app-pedido" assetpath="src/">
+--><!--<link rel="import" href="my-icons.html">-->
+
+<dom-module id="app-pedido" assetpath="src/">
 
   <template>
 
@@ -21404,8 +21557,20 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		background-color: rgb(128, 128, 255);
 		color: white;
 	  }
+	  app-drawer {
+		--app-drawer-width: 220px;
+	  }
+	  .menu_item {
+		margin : 20px 15px;
+	  }
+	  iron-icon {
+		color: gray;
+	  }
 	  [hide] {
 		display: none;
+	  }
+	  [green] {
+		background-color: #68c122;
 	  }
 
     </style>
@@ -21424,7 +21589,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 			<div style="display:flex;">
 				<paper-input type="number" style="width: 80px;padding-top: 0px; margin-top:0px;" on-change="cambiar_renglon" value="{{item.unds}}" no-label-float=""></paper-input>
 				<small class="precio" style="margin-left:15px;">Precio: {{item.prc}}</small>
-				<paper-fab mini="" id="{{item.id}}" on-click="borrar" style="margin-left:15px;"></paper-fab>
+				<paper-fab mini="" id="{{item.id}}" icon="close" on-click="borrar" style="margin-left:15px;"></paper-fab>
 			</div>
 		  </div>
 		</template>
@@ -21525,15 +21690,14 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 	  }
 	 </style>
 		<iron-ajax id="ajax" method="POST" handle-as="json" on-response="load_data" on-error="ajax_error"></iron-ajax>
-		
-		<paper-button on-click="get_productos" style="margin: 20px 30px;">Cargar Productos</paper-button>
+		<paper-fab mini="" green="" icon="autorenew" elevation="3" z-index="10" on-click="get_productos" style="position:absolute; left:263px; top:100px;"></paper-fab>
 		<div>{{msg}}</div>
 		<div style="display:flex">
-			<paper-input id="prod_src" floatinglabel="" label="Producto"></paper-input>
+			<iron-a11y-keys id="a11y" target="[[target]]" keys="enter" on-keys-pressed="filter"></iron-a11y-keys>
+			<paper-input id="prod_src" label="Producto" no-label-float=""></paper-input>
 			<!--<paper-button mini id="loc-button" on-click="change_loc">{{loc}}</paper-button>-->
-			<paper-fab mini="" id="find-button" icon="arrow-forward" on-click="filter"></paper-fab>
-			<!--<paper-fab mini id="sync-button" icon="notification:sync" on-click="sync"></paper-fab>-->
-			<h5 style="margin-left:12px;">{{filtered_data.length}} prods</h5>
+			<!--<paper-fab mini id="find-button" icon="arrow-forward" style="margin-left:7px;" on-click="filter"></paper-fab>-->
+			<strong style="margin-left:15px;margin-top:10px;">{{filtered_data.length}} prods</strong>
 		</div>
 		<template id="mytemplate" is="dom-repeat" items="{{filtered_data}}">
 		  <div class="card">
@@ -21645,26 +21809,33 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 	<dom-module id="tab-pedido" assetpath="src/">
 	  <template>
 		<style>
-			paper-input { margin-left: 12px; }
+			paper-input { margin-left: 12px; 
+			paper-button {
+				margin-top: 40px;
+				padding-left: 25px;
+				padding-rigth: 25px;
+				width: 180px;
+			}
 		</style>
 		<iron-ajax id="ajax" method="POST" handle-as="json" on-response="load_data" on-error="ajax_error"></iron-ajax>
-		<h4 style="margin: 15px 0px 0px 15px;">&gt; Cliente</h4>
-		<paper-input id="clte" value="{{cliente.nombre}}" placeholder="Seleccione un cliente..." nolabelfloat="true" style="width: 300px;" readonly=""></paper-input>
+		<h4 style="margin: 25px 0px 0px 15px;"><iron-icon icon="chevron-right"></iron-icon>Cliente</h4>
+		<paper-input id="clte" value="{{cliente.nombre}}" placeholder="Seleccione un cliente..." no-label-float="" style="width: 300px;" readonly=""></paper-input>
 		<!--<input is="iron-input" value={{cliente.nombre}} style="width: 300px;" readonly></input>-->
 		<div style="display: flex">
 		   <paper-input id="disponible" value="{{cliente.disponible}}" label="Saldo Disponible" style="width: 120px;" readonly=""></paper-input>
 		   <paper-input id="dcto" value="{{cliente.dcto_txt}}" label="Dcto Comercial" style="width: 90px; padding-left:15px;" readonly=""></paper-input>
 		</div>
-		<!--<br>-->
-		<h4 style="margin: 8px 15px;">&gt; Pedido</h4>
+		<h4 style="margin: 25px 15px 5px 15px;"><iron-icon icon="chevron-right"></iron-icon>Pedido</h4>
 		<div style="display: flex">
 		   <paper-input id="sku" value="{{pedido.skus}}" label="Productos" style="width: 60px;" readonly=""></paper-input>
 		   <paper-input id="unds" value="{{pedido.unds}}" label="Unidades" style="width: 70px; padding-left:7px;" readonly=""></paper-input>
 			<paper-input id="mto" value="{{pedido.mto}}" label="Total Monto" style="width: 125px; padding-left:7px;" readonly=""></paper-input>
 		</div>
-			<paper-button style="margin: 25px 30px;" on-click="enviar_pedido">Enviar</paper-button>
-			<paper-button style="margin: 25px 30px;" on-click="guardar_pedido">Guardar</paper-button>
-		
+		<br>
+		<div style="color:black;">
+			<paper-button style="margin-left:30px;" on-click="enviar_pedido"><iron-icon icon="arrow-upward" on-click="full" style="color: black;" size="32"></iron-icon>Enviar</paper-button>
+			<paper-button style="margin-left:30px;" on-click="guardar_pedido"><iron-icon icon="arrow-downward" on-click="full" style="color: black;" size="32"></iron-icon>Guardar</paper-button>
+		</div>
 		<h4 style="margin-left:30px;">{{msg}}</h4>
 	  </template>
 	  <script>
@@ -21731,15 +21902,51 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		})
 	  </script>
 	</dom-module>
+	
+	<dom-module id="tab-clientes" assetpath="src/">
+	  <template>
+		<paper-fab id="sync_cltes" mini="" green="" icon="autorenew" elevation="3" z-index="10" style="margin-left: 260px;margin-top:7px;"></paper-fab>
 
+	  </template>
+	  <script>
+		Polymer({
+
+		is: 'tab-clientes'
+		})
+	  </script>
+	</dom-module>
+	
 	<!--*** MAIN ***-->
 	<!--************-->
 	
     <app-drawer-layout id="my_app" fullbleed="">
 
       <!-- Drawer content -->
-      <app-drawer>
-        <app-toolbar>Menu</app-toolbar>
+      <app-drawer id="menu">
+        <app-toolbar style="background-color: #009688;color:white;height: 120px;">
+			<div bottom-item="" style="margin-left: 70px;margin-bottom: 5px;">Farvenca Móvil</div>
+			<!--<app-menu style="margin-left: 0px;"></app-menu>-->
+		</app-toolbar>
+		<div class="menu_item" on-click="crear_pedido">
+			<iron-icon icon="shopping-cart" item-icon=""></iron-icon>
+			Crear Pedido
+		</div>
+		<div class="menu_item" on-click="pedidos_pendientes">
+			<iron-icon icon="assignment" item-icon=""></iron-icon>
+			Pedidos Pendientes
+		</div>
+		<div class="menu_item" on-click="productos">
+			<iron-icon icon="loyalty" item-icon=""></iron-icon>
+			Productos
+		</div>
+		<div class="menu_item" on-click="clientes">
+			<iron-icon icon="face" item-icon=""></iron-icon>
+			Clientes
+		</div>
+		<div class="menu_item" on-click="acerca_de">
+			<iron-icon icon="stars" item-icon=""></iron-icon>
+			Acerca de
+		</div>
       </app-drawer>
 
       <!-- Main content -->
@@ -21750,9 +21957,10 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 			<div top-item="" style="display: flex; justify-content: space-between; margin: 5px 15px;">
 				<paper-icon-button icon="menu" drawer-toggle=""></paper-icon-button>
 				<div main-title="">{{titulo}}</div>
-				<div on-click="full">[ . . ]</div>
+				<paper-icon-button icon="open-with" on-click="full"></paper-icon-button>
+				<!--<iron-icon icon="" on-click="full" style="color: white;" size=32></iron-icon>-->
 			</div>
-			<paper-tabs bottom-item="" selected="0" <!--class="bottom self-end" --=""> &gt;
+			<paper-tabs id="tabs" bottom-item="" selected="0" <!--class="bottom self-end" --=""> &gt;
 				<paper-tab on-click="view1">Ped</paper-tab>
 				<paper-tab on-click="view2">Prods</paper-tab>
 				<paper-tab on-click="view3">Reng</paper-tab>
@@ -21764,6 +21972,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 			<tab-pedido id="view1" hide=""></tab-pedido>
 			<tab-prods id="view2" hide=""></tab-prods>
 			<tab-renglones id="view3" hide=""></tab-renglones>
+			<tab-clientes id="view_clientes" hide=""></tab-clientes>
+			<!--<div id="view_clientes" hide> Clientes </div>-->
 
       </app-header-layout>
 
@@ -21787,6 +21997,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		//this.titulo = 'Pedido'
 		this.pedido = []
 		this.cliente = []
+		//this.current_view = ''
 		this.view1()
 	  },
 	  agregar_renglon: function(renglon) {
@@ -21850,34 +22061,47 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		el.webkitRequestFullScreen()
 
 	  },
+	  crear_pedido: function() {
+		this.$.tabs.removeAttribute("hide");
+		this.$.tabs.selected = 0
+		this.view1()		
+		this.$.menu.close()
+	  },
 	  view1: function() {
 		this.titulo = 'Pedido'
 		this.$.view1.total_pedido(this.total_pedido())
-		this.$.view2.setAttribute("hide","");
-		this.$.view3.setAttribute("hide","");
-		this.$.view1.removeAttribute("hide");
+		if (this.current_view) this.$[this.current_view].setAttribute("hide","")
+		this.current_view = 'view1'
+		this.$[this.current_view].removeAttribute("hide");
 	  },
 	  view2: function() {
+		this.$[this.current_view].setAttribute("hide","")
+		this.current_view = 'view2'
 		this.titulo = 'Productos'
 		if (this.$.view2.has_filter())
 			this.$.view2.filter()
-		this.$.view1.setAttribute("hide","");
-		this.$.view3.setAttribute("hide","");
-		this.$.view2.removeAttribute("hide");
-		
+		this.current_view = 'view2'
+		this.$[this.current_view].removeAttribute("hide");
 	  },
 	  view3: function() {
+		this.$[this.current_view].setAttribute("hide","")
+		this.current_view = 'view3'
 		this.titulo = 'Renglones'
 		this.$.view3.set_renglones(this.pedido.slice(0))
-		this.$.view1.setAttribute("hide","");
-		this.$.view2.setAttribute("hide","");
-		this.$.view3.removeAttribute("hide");
+		this.current_view = 'view3'
+		this.$[this.current_view].removeAttribute("hide");
+	  },
+	  clientes: function() {
+		this.titulo = 'Clientes'
+		this.$.tabs.setAttribute("hide","")
+		this.$[this.current_view].setAttribute("hide","")
+		this.current_view = 'view_clientes'
+		this.$[this.current_view].removeAttribute("hide");
+		this.$.menu.close()
 	  }
-
     });
 
   </script>
-
 </dom-module>
 </div>
 	<app-pedido id="app_pedido"></app-pedido>

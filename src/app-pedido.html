@@ -24,6 +24,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 <link rel="import" href="../bower_components/iron-iconset-svg/iron-iconset-svg.html">
 <link rel="import" href="../bower_components/paper-fab/paper-fab.html">
 <link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../bower_components/iron-a11y-keys/iron-a11y-keys.html">
 
 <!--<link rel="import" href="my-icons.html">-->
 
@@ -90,6 +91,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 	  }
 	  [hide] {
 		display: none;
+	  }
+	  [green] {
+		background-color: #68c122;
 	  }
 
     </style>
@@ -209,16 +213,13 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 	  }
 	 </style>
 		<iron-ajax id="ajax" method='POST' handle-as="json" on-response="load_data" on-error="ajax_error"></iron-ajax>
-		<paper-button on-click="get_productos" style="margin: 20px 50px;">
-			<iron-icon icon="autorenew" style="color: black;"></iron-icon>
-			Cargar Productos
-		</paper-button>
+		<paper-fab mini green icon="autorenew" elevation=3 z-index=10 on-click="get_productos" style="position:absolute; left:263px; top:100px;"></paper-fab>
 		<div>{{msg}}</div>
 		<div style="display:flex">
+			<iron-a11y-keys id="a11y" target="[[target]]" keys="enter" on-keys-pressed="filter"></iron-a11y-keys>
 			<paper-input id="prod_src" label="Producto" no-label-float></paper-input>
 			<!--<paper-button mini id="loc-button" on-click="change_loc">{{loc}}</paper-button>-->
-			<paper-fab mini id="find-button" icon="arrow-forward" style="margin-left:7px;" on-click="filter"></paper-fab>
-			<!--<paper-fab mini id="sync-button" icon="notification:sync" on-click="sync"></paper-fab>-->
+			<!--<paper-fab mini id="find-button" icon="arrow-forward" style="margin-left:7px;" on-click="filter"></paper-fab>-->
 			<strong style="margin-left:15px;margin-top:10px;">{{filtered_data.length}} prods</strong>
 		</div>
 		<template id="mytemplate" is="dom-repeat" items="{{filtered_data}}">
@@ -425,54 +426,47 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 	  </script>
 	</dom-module>
 	
-	<!--*** MENU ***-->
-	<!--************-->
-	
-	<dom-module id="app-menu">
+	<dom-module id="tab-clientes">
 	  <template>
-		<!--<div style="margin-left: -16px; height: 200px; width: 256px; background-color: #009688;">-->
-			<h4 style="margin: 50px 50px;z-index: 10;">Farvenca Móvil</h4>
-		<!--</div>-->
-		<!--<paper-toolbar class="tall">
-			Menu
-		</paper-toolbar>-->
+		<paper-fab id="sync_cltes" mini green icon="autorenew" elevation=3 z-index=10 style="margin-left: 260px;margin-top:7px;"></paper-fab>
+
 	  </template>
 	  <script>
 		Polymer({
 
-		is: 'app-menu'
+		is: 'tab-clientes'
 		})
 	  </script>
 	</dom-module>
-
+	
 	<!--*** MAIN ***-->
 	<!--************-->
 	
     <app-drawer-layout id="my_app" fullbleed>
 
       <!-- Drawer content -->
-      <app-drawer>
+      <app-drawer id="menu">
         <app-toolbar style="background-color: #009688;color:white;height: 120px;">
 			<div bottom-item style="margin-left: 70px;margin-bottom: 5px;">Farvenca Móvil</div>
 			<!--<app-menu style="margin-left: 0px;"></app-menu>-->
 		</app-toolbar>
-		<div class="menu_item">
+		<div class="menu_item" on-click="crear_pedido">
 			<iron-icon icon="shopping-cart" item-icon></iron-icon>
 			Crear Pedido
 		</div>
-		<div class="menu_item">
+		<div class="menu_item" on-click="pedidos_pendientes">
 			<iron-icon icon="assignment" item-icon></iron-icon>
 			Pedidos Pendientes
 		</div>
-		<div class="menu_item">
+		<div class="menu_item" on-click="productos">
 			<iron-icon icon="loyalty" item-icon></iron-icon>
 			Productos
 		</div>
-		<div class="menu_item">
+		<div class="menu_item" on-click="clientes">
 			<iron-icon icon="face" item-icon></iron-icon>
 			Clientes
 		</div>
-		<div class="menu_item">
+		<div class="menu_item" on-click="acerca_de">
 			<iron-icon icon="stars" item-icon></iron-icon>
 			Acerca de
 		</div>
@@ -489,7 +483,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 				<paper-icon-button icon="open-with" on-click="full"></paper-icon-button>
 				<!--<iron-icon icon="" on-click="full" style="color: white;" size=32></iron-icon>-->
 			</div>
-			<paper-tabs bottom-item selected="0" <!--class="bottom self-end"--> >
+			<paper-tabs id="tabs" bottom-item selected="0" <!--class="bottom self-end"--> >
 				<paper-tab on-click="view1">Ped</paper-tab>
 				<paper-tab on-click="view2">Prods</paper-tab>
 				<paper-tab on-click="view3">Reng</paper-tab>
@@ -501,6 +495,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 			<tab-pedido id='view1' hide></tab-pedido>
 			<tab-prods id='view2'  hide></tab-prods>
 			<tab-renglones id='view3' hide></tab-renglones>
+			<tab-clientes id='view_clientes' hide></tab-clientes>
+			<!--<div id="view_clientes" hide> Clientes </div>-->
 
       </app-header-layout>
 
@@ -524,6 +520,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		//this.titulo = 'Pedido'
 		this.pedido = []
 		this.cliente = []
+		//this.current_view = ''
 		this.view1()
 	  },
 	  agregar_renglon: function(renglon) {
@@ -587,30 +584,44 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		el.webkitRequestFullScreen()
 
 	  },
+	  crear_pedido: function() {
+		this.$.tabs.removeAttribute("hide");
+		this.$.tabs.selected = 0
+		this.view1()		
+		this.$.menu.close()
+	  },
 	  view1: function() {
 		this.titulo = 'Pedido'
 		this.$.view1.total_pedido(this.total_pedido())
-		this.$.view2.setAttribute("hide","");
-		this.$.view3.setAttribute("hide","");
-		this.$.view1.removeAttribute("hide");
+		if (this.current_view) this.$[this.current_view].setAttribute("hide","")
+		this.current_view = 'view1'
+		this.$[this.current_view].removeAttribute("hide");
 	  },
 	  view2: function() {
+		this.$[this.current_view].setAttribute("hide","")
+		this.current_view = 'view2'
 		this.titulo = 'Productos'
 		if (this.$.view2.has_filter())
 			this.$.view2.filter()
-		this.$.view1.setAttribute("hide","");
-		this.$.view3.setAttribute("hide","");
-		this.$.view2.removeAttribute("hide");
-		
+		this.current_view = 'view2'
+		this.$[this.current_view].removeAttribute("hide");
 	  },
 	  view3: function() {
+		this.$[this.current_view].setAttribute("hide","")
+		this.current_view = 'view3'
 		this.titulo = 'Renglones'
 		this.$.view3.set_renglones(this.pedido.slice(0))
-		this.$.view1.setAttribute("hide","");
-		this.$.view2.setAttribute("hide","");
-		this.$.view3.removeAttribute("hide");
+		this.current_view = 'view3'
+		this.$[this.current_view].removeAttribute("hide");
+	  },
+	  clientes: function() {
+		this.titulo = 'Clientes'
+		this.$.tabs.setAttribute("hide","")
+		this.$[this.current_view].setAttribute("hide","")
+		this.current_view = 'view_clientes'
+		this.$[this.current_view].removeAttribute("hide");
+		this.$.menu.close()
 	  }
-
     });
 
   </script>
