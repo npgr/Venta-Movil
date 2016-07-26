@@ -179,7 +179,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 	 <style>
 	  #prod_src {
 		margin-left: 12px;
-		width: 8em;
+		width: 6em;
 	  }
 	  #loc-button {
 		background-color: rgb(128, 128, 255);
@@ -218,9 +218,10 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		<div style="display:flex">
 			<iron-a11y-keys id="a11y" target="[[target]]" keys="enter" on-keys-pressed="filter"></iron-a11y-keys>
 			<paper-input id="prod_src" label="Producto" no-label-float></paper-input>
+			<iron-icon icon="search" on-click="filter"></iron-icon>
 			<!--<paper-button mini id="loc-button" on-click="change_loc">{{loc}}</paper-button>-->
 			<!--<paper-fab mini id="find-button" icon="arrow-forward" style="margin-left:7px;" on-click="filter"></paper-fab>-->
-			<strong style="margin-left:15px;margin-top:10px;">{{filtered_data.length}} prods</strong>
+			<strong id="tot" style="margin-left:15px;margin-top:10px;">{{filtered_data.length}} prods</strong>
 		</div>
 		<template id="mytemplate" is="dom-repeat" items="{{filtered_data}}">
 		  <div class="card">
@@ -266,6 +267,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 				this.app_pedido.agregar_renglon(renglon)
 			}, 
 			filter: function() {
+				this.$.prod_src.blur()
+				this.$.tot.focus()
 				this.filtered_data=[]
 				this.$.mytemplate.render()
 				if (this.$.prod_src.value.length >= 3)
