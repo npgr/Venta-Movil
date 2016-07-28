@@ -302,7 +302,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 					return false
 			},
 			get_productos: function() {
-				this.$.ajax.url = 'http://e0c4cfea.ngrok.io/proddata'
+				//this.$.ajax.url = 'http://e0c4cfea.ngrok.io/proddata'
+				this.$.ajax.url = 'http://localhost:3000/proddata'
 				this.$.ajax.contentType="application/json"
 				this.$.ajax.body = {"my_key": "v3nt4m0v1l.123"}
 				this.msg = 'Cargando...'
@@ -431,16 +432,84 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 	
 	<dom-module id="tab-clientes">
 	  <template>
-		<paper-fab id="sync_cltes" mini green icon="autorenew" elevation=3 z-index=10 style="margin-left: 260px;margin-top:7px;"></paper-fab>
-
+		<iron-ajax id="ajax" method='POST' handle-as="json" on-response="load_data" on-error="ajax_error"></iron-ajax>
+		<paper-fab on-click="get_clientes" mini green icon="autorenew" elevation=3 z-index=10 style="margin-left: 260px;margin-top:7px;"></paper-fab>
+		
+		<div>{{msg}}</div>
+		<div style="display:flex">
+			<iron-a11y-keys id="a11y" target="[[target]]" keys="enter" on-keys-pressed="filter"></iron-a11y-keys>
+			<paper-input id="clte_src" label="Cliente" no-label-float></paper-input>
+			<iron-icon icon="search" on-click="filter"></iron-icon>
+			<!--<paper-button mini id="loc-button" on-click="change_loc">{{loc}}</paper-button>-->
+			<!--<paper-fab mini id="find-button" icon="arrow-forward" style="margin-left:7px;" on-click="filter"></paper-fab>-->
+			<strong id="tot" style="margin-left:15px;margin-top:10px;">{{filtered_data.length}} prods</strong>
+		</div>
+		<template id="mytemplate" is="dom-repeat" items="{{filtered_data}}">
+		  <div class="card">
+		    <iron-icon mini icon="more-vert" on-click="" style="color:green;"></iron-icon>
+			<!--<iron-icon icon="inf" on-click=""></paper-fab>-->
+			<strong class="desc">{{item.nombre}}</strong>
+			<br>
+			<strong class="existencia">{{item.ciudad}}</strong>
+			<small class="precio" valor={{item.saldo}} style="margin-left:20px;">Saldo: {{item.saldo}}</small> 
+		  </div>
+		</template>
 	  </template>
 	  <script>
 		Polymer({
 
-		is: 'tab-clientes'
+		is: 'tab-clientes',
+		ready: function() {
+			this.app_pedido = document.getElementById('app_pedido')
+			if (localStorage.getItem("cltes_data") === null)
+				this.clientes = []
+			 else
+			    this.clientes = JSON.parse(localStorage.getItem("cltes_data"))
+			this.msg = 'Cantidad Clientes: '+this.clientes.length
+			this.filtered_data = []
+		},
+		filter: function() {
+			this.filtered_data=[]
+			this.$.mytemplate.render()
+			var filtered_d = []
+			for (i=0; i<this.clientes.length; i++)
+				if (this.clientes[i].nombre.toLowerCase().indexOf(this.$.clte_src.value.toLowerCase()) > -1)
+					filtered_d.push(this.clientes[i])
+			/** Load Pedido Info **/
+			this.filtered_data = filtered_d
+			filtered_d = []	
+		},
+		get_clientes: function() {
+			//this.$.ajax.url = 'http://e0c4cfea.ngrok.io/proddata'
+			this.$.ajax.url = 'http://localhost:3000/clientes/zona/16'
+			this.$.ajax.contentType="application/json"
+			this.$.ajax.body = {"my_key": "v3nt4m0v1l.123"}
+			this.msg = 'Cargando...'
+			this.$.ajax.generateRequest()
+		},
+		load_data: function() {	
+			console.log(this.$.ajax.lastResponse)
+			if (this.$.ajax.lastResponse.err)
+			{
+				this.msg = this.$.ajax.lastResponse.err
+				console.log(this.$.ajax.lastResponse.err)
+			}
+			else
+			{
+				localStorage["cltes_data"] = JSON.stringify(this.$.ajax.lastResponse)
+				this.clientes = JSON.parse(localStorage["cltes_data"])
+				this.msg = 'Cargados '+this.$.ajax.lastResponse.length+' Clientes'
+			}
+		},
+		ajax_error: function() {
+			console.log(this.$.ajax.lastError)
+			//alert("<%= lng('Error Processing Request: ')%>", this.$.ajax.lastError)
+			this.msg = 'Error Cargando Clientes'
+			//alert(this.msg)
+		}
 		})
 	  </script>
-	</dom-module>
+	</dom-module>-->
 	
 	<!--*** MAIN ***-->
 	<!--************-->
