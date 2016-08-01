@@ -18,8 +18,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 <link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="../bower_components/paper-input/paper-input.html">
 <link rel="import" href="../bower_components/paper-button/paper-button.html">
-<link rel="import" href="../bower_components/iron-collapse/iron-collapse.html">
+<link rel="import" href="../bower_components/paper-dialog/paper-dialog.html">
 <link rel="import" href="../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../bower_components/iron-icons/social-icons.html">
 <link rel="import" href="../bower_components/iron-icon/iron-icon.html">
 <link rel="import" href="../bower_components/iron-iconset-svg/iron-iconset-svg.html">
 <link rel="import" href="../bower_components/paper-fab/paper-fab.html">
@@ -112,7 +113,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 			<div style="display:flex;">
 				<paper-input type="number" style="width: 80px;padding-top: 0px; margin-top:0px;" on-change="cambiar_renglon" value={{item.unds}} no-label-float></paper-input>
 				<small class="precio" style="margin-left:15px;">Precio: {{item.prc}}</small>
-				<paper-fab mini id="{{item.id}}" icon="close" on-click="borrar" style="margin-left:15px;"></paper-fab>
+				<iron-icon mini id="{{item.id}}" icon="cancel" on-click="borrar" style="margin-left:15px;color:red;"></iron-icon>
 			</div>
 		  </div>
 		</template>
@@ -218,7 +219,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		<div style="display:flex">
 			<iron-a11y-keys id="a11y" target="[[target]]" keys="enter" on-keys-pressed="filter"></iron-a11y-keys>
 			<paper-input id="prod_src" label="Producto" no-label-float></paper-input>
-			<iron-icon icon="search" on-click="filter"></iron-icon>
+			<iron-icon icon="find-in-page" on-click="filter"></iron-icon>
 			<!--<paper-button mini id="loc-button" on-click="change_loc">{{loc}}</paper-button>-->
 			<!--<paper-fab mini id="find-button" icon="arrow-forward" style="margin-left:7px;" on-click="filter"></paper-fab>-->
 			<strong id="tot" style="margin-left:15px;margin-top:10px;">{{filtered_data.length}} prods</strong>
@@ -255,7 +256,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 				this.msg = 'Cantidad Productos: '+this.productos.length
 				this.filtered_data = []
 			},
-			pedir_renglon: function(e, detail) {
+			pedir_renglon: function(e) {
 				//alert("exito")
 				var renglon = {
 					id: e.target.domHost.id,
@@ -345,14 +346,14 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 			}
 		</style>
 		<iron-ajax id="ajax" method='POST' handle-as="json" on-response="load_data" on-error="ajax_error"></iron-ajax>
-		<h4 style="margin: 25px 0px 0px 15px;"><iron-icon icon="chevron-right"></iron-icon>Cliente</h4>
+		<h3 style="margin: 25px 0px 0px 15px;"><iron-icon icon="social:person" style="color:purple;margin-right:5px;"></iron-icon>Cliente</h3>
 		<paper-input id="clte" value={{cliente.nombre}} placeholder="Seleccione un cliente..." no-label-float style="width: 300px;" readonly></paper-input>
 		<!--<input is="iron-input" value={{cliente.nombre}} style="width: 300px;" readonly></input>-->
 		<div style="display: flex">
 		   <paper-input id="disponible" value={{cliente.disponible}} label="Saldo Disponible" style="width: 120px;" readonly></paper-input>
 		   <paper-input id="dcto" value={{cliente.dcto_txt}} label="Dcto Comercial" style="width: 90px; padding-left:15px;" readonly></paper-input>
 		</div>
-		<h4 style="margin: 25px 15px 5px 15px;"><iron-icon icon="chevron-right"></iron-icon>Pedido</h4>
+		<h3 style="margin: 25px 15px 5px 15px;color:#00695C;"><iron-icon icon="shopping-basket" style="color:#00695C;margin-right:5px;"></iron-icon>Pedido</h3>
 		<div style="display: flex">
 		   <paper-input id="sku" value={{pedido.skus}} label="Productos" style="width: 60px;" readonly></paper-input>
 		   <paper-input id="unds" value={{pedido.unds}} label="Unidades" style="width: 70px; padding-left:7px;" readonly></paper-input>
@@ -434,24 +435,33 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 	  <template>
 		<iron-ajax id="ajax" method='POST' handle-as="json" on-response="load_data" on-error="ajax_error"></iron-ajax>
 		<paper-fab on-click="get_clientes" mini green icon="autorenew" elevation=3 z-index=10 style="margin-left: 260px;margin-top:7px;"></paper-fab>
-		
+
 		<div>{{msg}}</div>
 		<div style="display:flex">
 			<iron-a11y-keys id="a11y" target="[[target]]" keys="enter" on-keys-pressed="filter"></iron-a11y-keys>
-			<paper-input id="clte_src" label="Cliente" no-label-float></paper-input>
-			<iron-icon icon="search" on-click="filter"></iron-icon>
+			<paper-input id="clte_src" label="Cliente" style="width:7em;margin-left:7px;" no-label-float></paper-input>
+			<iron-icon icon="search" style="color:chocolate;" on-click="filter"></iron-icon>
 			<!--<paper-button mini id="loc-button" on-click="change_loc">{{loc}}</paper-button>-->
 			<!--<paper-fab mini id="find-button" icon="arrow-forward" style="margin-left:7px;" on-click="filter"></paper-fab>-->
-			<strong id="tot" style="margin-left:15px;margin-top:10px;">{{filtered_data.length}} prods</strong>
+			<strong id="tot" style="margin-left:15px;margin-top:10px;">{{filtered_data.length}} cltes</strong>
 		</div>
+		<paper-dialog id="clte_menu"> 
+		<!--<paper-menu>-->
+			<div on-click="nuevo_pedido" style="min-height:20px;line-height:35px;">Nuevo Pedido</div>
+			<!--<div on-click="pedidos" style="min-height:20px;line-height:35px;">Pedidos Pendientes</paper-item>-->
+			<div on-click="info" style="min-height:20px;line-height:35px;">Detalle Cliente</div>
+		<!--</paper-menu>-->
+		</paper-dialog>
 		<template id="mytemplate" is="dom-repeat" items="{{filtered_data}}">
 		  <div class="card">
-		    <iron-icon mini icon="more-vert" on-click="" style="color:green;"></iron-icon>
 			<!--<iron-icon icon="inf" on-click=""></paper-fab>-->
-			<strong class="desc">{{item.nombre}}</strong>
-			<br>
-			<strong class="existencia">{{item.ciudad}}</strong>
-			<small class="precio" valor={{item.saldo}} style="margin-left:20px;">Saldo: {{item.saldo}}</small> 
+			<strong class="desc">[[item.nombre]]</strong>
+			<!--<br>-->
+			<div style="display:flex; justify-content:space-between">
+				<strong class="existencia">[[item.ciudad]]</strong>
+				<small class="precio" valor=[[item.saldo]] style="margin-left:20px;">Saldo: [[item.saldo]]</small> 
+				<iron-icon id="{{item.id}}" icon="more-vert" on-click="open_clte_menu" style="color:chocolate;"></iron-icon>
+			</div>
 		  </div>
 		</template>
 	  </template>
@@ -486,6 +496,12 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 			this.$.ajax.body = {"my_key": "v3nt4m0v1l.123"}
 			this.msg = 'Cargando...'
 			this.$.ajax.generateRequest()
+		},
+		open_clte_menu: function(e) {
+			//console.log(this.filtered_data)
+			var id = e.target.id
+			console.log(id)
+			this.$.clte_menu.toggle()
 		},
 		load_data: function() {	
 			console.log(this.$.ajax.lastResponse)
@@ -523,7 +539,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 			<!--<app-menu style="margin-left: 0px;"></app-menu>-->
 		</app-toolbar>
 		<div class="menu_item" on-click="crear_pedido">
-			<iron-icon icon="shopping-cart" item-icon></iron-icon>
+			<iron-icon icon="shopping-cart" style="color:#FF6D00;" item-icon></iron-icon>
 			Crear Pedido
 		</div>
 		<div class="menu_item" on-click="pedidos_pendientes">
@@ -539,7 +555,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 			Clientes
 		</div>
 		<div class="menu_item" on-click="acerca_de">
-			<iron-icon icon="stars" item-icon></iron-icon>
+			<iron-icon icon="perm-device-information" item-icon></iron-icon>
 			Acerca de
 		</div>
       </app-drawer>
@@ -556,9 +572,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 				<!--<iron-icon icon="" on-click="full" style="color: white;" size=32></iron-icon>-->
 			</div>
 			<paper-tabs id="tabs" bottom-item selected="0" <!--class="bottom self-end"--> >
-				<paper-tab on-click="view1">Ped</paper-tab>
-				<paper-tab on-click="view2">Prods</paper-tab>
-				<paper-tab on-click="view3">Reng</paper-tab>
+				<paper-tab on-click="view1"><iron-icon icon="shopping-basket" style="color:white;" item-icon></iron-icon></paper-tab>
+				<paper-tab on-click="view2"><iron-icon icon="loyalty" style="color:white;" item-icon></iron-icon></paper-tab>
+				<paper-tab on-click="view3"><iron-icon icon="assignment" style="color:white;" item-icon></iron-icon></paper-tab>
 			</paper-tabs>
 			
           </app-toolbar>
