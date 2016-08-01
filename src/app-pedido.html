@@ -347,11 +347,11 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		</style>
 		<iron-ajax id="ajax" method='POST' handle-as="json" on-response="load_data" on-error="ajax_error"></iron-ajax>
 		<h3 style="margin: 25px 0px 0px 15px;"><iron-icon icon="social:person" style="color:purple;margin-right:5px;"></iron-icon>Cliente</h3>
-		<paper-input id="clte" value={{cliente.nombre}} placeholder="Seleccione un cliente..." no-label-float style="width: 300px;" readonly></paper-input>
+		<paper-input id="clte" value=[[cliente.nombre]] placeholder="Seleccione un cliente..." no-label-float style="width: 300px;" readonly></paper-input>
 		<!--<input is="iron-input" value={{cliente.nombre}} style="width: 300px;" readonly></input>-->
 		<div style="display: flex">
-		   <paper-input id="disponible" value={{cliente.disponible}} label="Saldo Disponible" style="width: 120px;" readonly></paper-input>
-		   <paper-input id="dcto" value={{cliente.dcto_txt}} label="Dcto Comercial" style="width: 90px; padding-left:15px;" readonly></paper-input>
+		   <paper-input id="disponible" value=[[cliente.disponible]] label="Saldo Disponible" style="width: 120px;" readonly></paper-input>
+		   <paper-input id="dcto" value=[[cliente.dcto_txt]] label="Dcto Comercial" style="width: 90px; padding-left:15px;" readonly></paper-input>
 		</div>
 		<h3 style="margin: 25px 15px 5px 15px;color:#00695C;"><iron-icon icon="shopping-basket" style="color:#00695C;margin-right:5px;"></iron-icon>Pedido</h3>
 		<div style="display: flex">
@@ -381,11 +381,16 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 			this.app_pedido = document.getElementById('app_pedido')
 			this.cliente = {
 				id: 100,
-				nombre: "FARMACIA LA REDOMA CATIA LA MAR 2006, C.A.".toLowerCase(),
-				disponible: 19500,
-				dcto: 11.3,
-				dcto_txt: '11.3 %'
+				nombre: "Seleccione un Cliente...",
+				disponible: 0,
+				//dcto_cial: 0,
+				dcto_txt: ' %'
 			}
+		},
+		set_cliente: function(cliente) {
+			cliente.disponible = cliente.credito - cliente.saldo 
+			cliente.dcto_txt = cliente.dcto_cial+' %'
+			this.cliente = cliente
 		},
 		total_pedido: function(total) {
 			this.pedido = total
@@ -442,21 +447,24 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 			<paper-input id="clte_src" label="Cliente" style="width:7em;margin-left:7px;" no-label-float></paper-input>
 			<iron-icon icon="search" style="color:chocolate;" on-click="filter"></iron-icon>
 			<!--<paper-button mini id="loc-button" on-click="change_loc">{{loc}}</paper-button>-->
-			<!--<paper-fab mini id="find-button" icon="arrow-forward" style="margin-left:7px;" on-click="filter"></paper-fab>-->
 			<strong id="tot" style="margin-left:15px;margin-top:10px;">{{filtered_data.length}} cltes</strong>
 		</div>
-		<paper-dialog id="clte_menu"> 
+		<paper-dialog id="clte_menu" style="width:180px;"> 
 		<!--<paper-menu>-->
-			<div on-click="nuevo_pedido" style="min-height:20px;line-height:35px;">Nuevo Pedido</div>
+			<div on-click="crear_pedido" style="min-height:20px;line-height:35px;">
+				<iron-icon icon="shopping-basket" style="color:Maroon;"></iron-icon>
+				<span style="margin-left:5px;">Nuevo Pedido</span>
+			</div>
 			<!--<div on-click="pedidos" style="min-height:20px;line-height:35px;">Pedidos Pendientes</paper-item>-->
-			<div on-click="info" style="min-height:20px;line-height:35px;">Detalle Cliente</div>
+			<div on-click="info_cliente" style="min-height:20px;line-height:35px;">
+				<iron-icon icon="info-outline" style="color:ForestGreen;"></iron-icon>
+				<span style="margin-left:5px;">Info Cliente</span>
+			</div>
 		<!--</paper-menu>-->
 		</paper-dialog>
 		<template id="mytemplate" is="dom-repeat" items="{{filtered_data}}">
 		  <div class="card">
-			<!--<iron-icon icon="inf" on-click=""></paper-fab>-->
 			<strong class="desc">[[item.nombre]]</strong>
-			<!--<br>-->
 			<div style="display:flex; justify-content:space-between">
 				<strong class="existencia">[[item.ciudad]]</strong>
 				<small class="precio" valor=[[item.saldo]] style="margin-left:20px;">Saldo: [[item.saldo]]</small> 
@@ -497,10 +505,24 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 			this.msg = 'Cargando...'
 			this.$.ajax.generateRequest()
 		},
+		crear_pedido: function() {
+			this.$.clte_menu.close()
+			this.app_pedido.crear_pedido(this.cliente)
+		},
+		info_cliente: function() {
+			this.$.clte_menu.close()
+			alert('info cliente')
+		},
 		open_clte_menu: function(e) {
-			//console.log(this.filtered_data)
-			var id = e.target.id
-			console.log(id)
+			var id = Number(e.target.id)
+			for (var i=0; i < this.filtered_data.length; i++)
+				if (id == this.filtered_data[i].id)
+				{
+					this.cliente = this.filtered_data[i]
+					i = this.filtered_data.length
+				}
+			console.log(this.cliente)
+			//this.$.clte_menu.style.top = e.target.offsetTop+"px"
 			this.$.clte_menu.toggle()
 		},
 		load_data: function() {	
@@ -672,7 +694,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		el.webkitRequestFullScreen()
 
 	  },
-	  crear_pedido: function() {
+	  crear_pedido: function(cliente) {
+		this.cliente = cliente
+		this.$.view1.set_cliente(this.cliente)
 		this.$.tabs.removeAttribute("hide");
 		this.$.tabs.selected = 0
 		this.view1()		
