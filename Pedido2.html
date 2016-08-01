@@ -19507,276 +19507,2359 @@ The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
 The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
 Code distributed by Google as part of the polymer project is also
 subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
---><!--
-`iron-collapse` creates a collapsible block of content.  By default, the content
-will be collapsed.  Use `opened` or `toggle()` to show/hide the content.
+--><script>
 
-    <button on-click="toggle">toggle collapse</button>
+  /**
+   * `Polymer.NeonAnimatableBehavior` is implemented by elements containing animations for use with
+   * elements implementing `Polymer.NeonAnimationRunnerBehavior`.
+   * @polymerBehavior
+   */
+  Polymer.NeonAnimatableBehavior = {
 
-    <iron-collapse id="collapse">
-      <div>Content goes here...</div>
-    </iron-collapse>
+    properties: {
 
-    ...
+      /**
+       * Animation configuration. See README for more info.
+       */
+      animationConfig: {
+        type: Object
+      },
 
-    toggle: function() {
-      this.$.collapse.toggle();
+      /**
+       * Convenience property for setting an 'entry' animation. Do not set `animationConfig.entry`
+       * manually if using this. The animated node is set to `this` if using this property.
+       */
+      entryAnimation: {
+        observer: '_entryAnimationChanged',
+        type: String
+      },
+
+      /**
+       * Convenience property for setting an 'exit' animation. Do not set `animationConfig.exit`
+       * manually if using this. The animated node is set to `this` if using this property.
+       */
+      exitAnimation: {
+        observer: '_exitAnimationChanged',
+        type: String
+      }
+
+    },
+
+    _entryAnimationChanged: function() {
+      this.animationConfig = this.animationConfig || {};
+      this.animationConfig['entry'] = [{
+        name: this.entryAnimation,
+        node: this
+      }];
+    },
+
+    _exitAnimationChanged: function() {
+      this.animationConfig = this.animationConfig || {};
+      this.animationConfig['exit'] = [{
+        name: this.exitAnimation,
+        node: this
+      }];
+    },
+
+    _copyProperties: function(config1, config2) {
+      // shallowly copy properties from config2 to config1
+      for (var property in config2) {
+        config1[property] = config2[property];
+      }
+    },
+
+    _cloneConfig: function(config) {
+      var clone = {
+        isClone: true
+      };
+      this._copyProperties(clone, config);
+      return clone;
+    },
+
+    _getAnimationConfigRecursive: function(type, map, allConfigs) {
+      if (!this.animationConfig) {
+        return;
+      }
+
+      if(this.animationConfig.value && typeof this.animationConfig.value === 'function') {
+      	this._warn(this._logf('playAnimation', "Please put 'animationConfig' inside of your components 'properties' object instead of outside of it."));
+      	return;
+      }
+
+      // type is optional
+      var thisConfig;
+      if (type) {
+        thisConfig = this.animationConfig[type];
+      } else {
+        thisConfig = this.animationConfig;
+      }
+
+      if (!Array.isArray(thisConfig)) {
+        thisConfig = [thisConfig];
+      }
+
+      // iterate animations and recurse to process configurations from child nodes
+      if (thisConfig) {
+        for (var config, index = 0; config = thisConfig[index]; index++) {
+          if (config.animatable) {
+            config.animatable._getAnimationConfigRecursive(config.type || type, map, allConfigs);
+          } else {
+            if (config.id) {
+              var cachedConfig = map[config.id];
+              if (cachedConfig) {
+                // merge configurations with the same id, making a clone lazily
+                if (!cachedConfig.isClone) {
+                  map[config.id] = this._cloneConfig(cachedConfig)
+                  cachedConfig = map[config.id];
+                }
+                this._copyProperties(cachedConfig, config);
+              } else {
+                // put any configs with an id into a map
+                map[config.id] = config;
+              }
+            } else {
+              allConfigs.push(config);
+            }
+          }
+        }
+      }
+    },
+
+    /**
+     * An element implementing `Polymer.NeonAnimationRunnerBehavior` calls this method to configure
+     * an animation with an optional type. Elements implementing `Polymer.NeonAnimatableBehavior`
+     * should define the property `animationConfig`, which is either a configuration object
+     * or a map of animation type to array of configuration objects.
+     */
+    getAnimationConfig: function(type) {
+      var map = {};
+      var allConfigs = [];
+      this._getAnimationConfigRecursive(type, map, allConfigs);
+      // append the configurations saved in the map to the array
+      for (var key in map) {
+        allConfigs.push(map[key]);
+      }
+      return allConfigs;
     }
 
-`iron-collapse` adjusts the max-height/max-width of the collapsible element to show/hide
-the content.  So avoid putting padding/margin/border on the collapsible directly,
-and instead put a div inside and style that.
+  };
 
-    <style>
-      .collapse-content {
-        padding: 15px;
-        border: 1px solid #dedede;
+</script>
+<script>
+
+  /**
+   * `Polymer.NeonAnimationRunnerBehavior` adds a method to run animations.
+   *
+   * @polymerBehavior Polymer.NeonAnimationRunnerBehavior
+   */
+  Polymer.NeonAnimationRunnerBehaviorImpl = {
+
+    _configureAnimations: function(configs) {
+      var results = [];
+      if (configs.length > 0) {
+        for (var config, index = 0; config = configs[index]; index++) {
+          var neonAnimation = document.createElement(config.name);
+          // is this element actually a neon animation?
+          if (neonAnimation.isNeonAnimation) {
+            var result = null;
+            // configuration or play could fail if polyfills aren't loaded
+            try {
+              result = neonAnimation.configure(config);
+              // Check if we have an Effect rather than an Animation
+              if (typeof result.cancel != 'function') { 
+                result = document.timeline.play(result);
+              }
+            } catch (e) {
+              result = null;
+              console.warn('Couldnt play', '(', config.name, ').', e);
+            }
+            if (result) {
+              results.push({
+                neonAnimation: neonAnimation,
+                config: config,
+                animation: result,
+              });
+            }
+          } else {
+            console.warn(this.is + ':', config.name, 'not found!');
+          }
+        }
       }
-    </style>
+      return results;
+    },
 
-    <iron-collapse>
-      <div class="collapse-content">
-        <div>Content goes here...</div>
+    _shouldComplete: function(activeEntries) {
+      var finished = true;
+      for (var i = 0; i < activeEntries.length; i++) {
+        if (activeEntries[i].animation.playState != 'finished') {
+          finished = false;
+          break;
+        }
+      }
+      return finished;
+    },
+
+    _complete: function(activeEntries) {
+      for (var i = 0; i < activeEntries.length; i++) {
+        activeEntries[i].neonAnimation.complete(activeEntries[i].config);
+      }
+      for (var i = 0; i < activeEntries.length; i++) {
+        activeEntries[i].animation.cancel();
+      }
+    },
+
+    /**
+     * Plays an animation with an optional `type`.
+     * @param {string=} type
+     * @param {!Object=} cookie
+     */
+    playAnimation: function(type, cookie) {
+      var configs = this.getAnimationConfig(type);
+      if (!configs) {
+        return;
+      }
+      this._active = this._active || {};
+      if (this._active[type]) {
+        this._complete(this._active[type]);
+        delete this._active[type];
+      }
+
+      var activeEntries = this._configureAnimations(configs);
+
+      if (activeEntries.length == 0) {
+        this.fire('neon-animation-finish', cookie, {bubbles: false});
+        return;
+      }
+
+      this._active[type] = activeEntries;
+
+      for (var i = 0; i < activeEntries.length; i++) {
+        activeEntries[i].animation.onfinish = function() {
+          if (this._shouldComplete(activeEntries)) {
+            this._complete(activeEntries);
+            delete this._active[type];
+            this.fire('neon-animation-finish', cookie, {bubbles: false});
+          }
+        }.bind(this);
+      }
+    },
+
+    /**
+     * Cancels the currently running animations.
+     */
+    cancelAnimation: function() {
+      for (var k in this._animations) {
+        this._animations[k].cancel();
+      }
+      this._animations = {};
+    }
+  };
+
+  /** @polymerBehavior Polymer.NeonAnimationRunnerBehavior */
+  Polymer.NeonAnimationRunnerBehavior = [
+    Polymer.NeonAnimatableBehavior,
+    Polymer.NeonAnimationRunnerBehaviorImpl
+  ];
+</script><!--
+@license
+Copyright (c) 2015 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+<!--
+@license
+Copyright (c) 2015 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+--><script>
+/**
+`Polymer.IronFitBehavior` fits an element in another element using `max-height` and `max-width`, and
+optionally centers it in the window or another element.
+
+The element will only be sized and/or positioned if it has not already been sized and/or positioned
+by CSS.
+
+CSS properties               | Action
+-----------------------------|-------------------------------------------
+`position` set               | Element is not centered horizontally or vertically
+`top` or `bottom` set        | Element is not vertically centered
+`left` or `right` set        | Element is not horizontally centered
+`max-height` set             | Element respects `max-height`
+`max-width` set              | Element respects `max-width`
+
+`Polymer.IronFitBehavior` can position an element into another element using
+`verticalAlign` and `horizontalAlign`. This will override the element's css position.
+
+      <div class="container">
+        <iron-fit-impl vertical-align="top" horizontal-align="auto">
+          Positioned into the container
+        </iron-fit-impl>
       </div>
-    </iron-collapse>
 
-@group Iron Elements
-@hero hero.svg
+Use `noOverlap` to position the element around another element without overlapping it.
+
+      <div class="container">
+        <iron-fit-impl no-overlap vertical-align="auto" horizontal-align="auto">
+          Positioned around the container
+        </iron-fit-impl>
+      </div>
+
 @demo demo/index.html
-@element iron-collapse
+@polymerBehavior
+*/
+
+  Polymer.IronFitBehavior = {
+
+    properties: {
+
+      /**
+       * The element that will receive a `max-height`/`width`. By default it is the same as `this`,
+       * but it can be set to a child element. This is useful, for example, for implementing a
+       * scrolling region inside the element.
+       * @type {!Element}
+       */
+      sizingTarget: {
+        type: Object,
+        value: function() {
+          return this;
+        }
+      },
+
+      /**
+       * The element to fit `this` into.
+       */
+      fitInto: {
+        type: Object,
+        value: window
+      },
+
+      /**
+       * Will position the element around the positionTarget without overlapping it.
+       */
+      noOverlap: {
+        type: Boolean
+      },
+
+      /**
+       * The element that should be used to position the element. If not set, it will
+       * default to the parent node.
+       * @type {!Element}
+       */
+      positionTarget: {
+        type: Element
+      },
+
+      /**
+       * The orientation against which to align the element horizontally
+       * relative to the `positionTarget`. Possible values are "left", "right", "auto".
+       */
+      horizontalAlign: {
+        type: String
+      },
+
+      /**
+       * The orientation against which to align the element vertically
+       * relative to the `positionTarget`. Possible values are "top", "bottom", "auto".
+       */
+      verticalAlign: {
+        type: String
+      },
+
+      /**
+       * If true, it will use `horizontalAlign` and `verticalAlign` values as preferred alignment
+       * and if there's not enough space, it will pick the values which minimize the cropping.
+       */
+      dynamicAlign: {
+        type: Boolean
+      },
+
+      /**
+       * The same as setting margin-left and margin-right css properties.
+       * @deprecated
+       */
+      horizontalOffset: {
+        type: Number,
+        value: 0,
+        notify: true
+      },
+
+      /**
+       * The same as setting margin-top and margin-bottom css properties.
+       * @deprecated
+       */
+      verticalOffset: {
+        type: Number,
+        value: 0,
+        notify: true
+      },
+
+      /**
+       * Set to true to auto-fit on attach.
+       */
+      autoFitOnAttach: {
+        type: Boolean,
+        value: false
+      },
+
+      /** @type {?Object} */
+      _fitInfo: {
+        type: Object
+      }
+    },
+
+    get _fitWidth() {
+      var fitWidth;
+      if (this.fitInto === window) {
+        fitWidth = this.fitInto.innerWidth;
+      } else {
+        fitWidth = this.fitInto.getBoundingClientRect().width;
+      }
+      return fitWidth;
+    },
+
+    get _fitHeight() {
+      var fitHeight;
+      if (this.fitInto === window) {
+        fitHeight = this.fitInto.innerHeight;
+      } else {
+        fitHeight = this.fitInto.getBoundingClientRect().height;
+      }
+      return fitHeight;
+    },
+
+    get _fitLeft() {
+      var fitLeft;
+      if (this.fitInto === window) {
+        fitLeft = 0;
+      } else {
+        fitLeft = this.fitInto.getBoundingClientRect().left;
+      }
+      return fitLeft;
+    },
+
+    get _fitTop() {
+      var fitTop;
+      if (this.fitInto === window) {
+        fitTop = 0;
+      } else {
+        fitTop = this.fitInto.getBoundingClientRect().top;
+      }
+      return fitTop;
+    },
+
+    /**
+     * The element that should be used to position the element,
+     * if no position target is configured.
+     */
+    get _defaultPositionTarget() {
+      var parent = Polymer.dom(this).parentNode;
+
+      if (parent && parent.nodeType === Node.DOCUMENT_FRAGMENT_NODE) {
+        parent = parent.host;
+      }
+
+      return parent;
+    },
+
+    /**
+     * The horizontal align value, accounting for the RTL/LTR text direction.
+     */
+    get _localeHorizontalAlign() {
+      if (this._isRTL) {
+        // In RTL, "left" becomes "right".
+        if (this.horizontalAlign === 'right') {
+          return 'left';
+        }
+        if (this.horizontalAlign === 'left') {
+          return 'right';
+        }
+      }
+      return this.horizontalAlign;
+    },
+
+    attached: function() {
+      // Memoize this to avoid expensive calculations & relayouts.
+      this._isRTL = window.getComputedStyle(this).direction == 'rtl';
+      this.positionTarget = this.positionTarget || this._defaultPositionTarget;
+      if (this.autoFitOnAttach) {
+        if (window.getComputedStyle(this).display === 'none') {
+          setTimeout(function() {
+            this.fit();
+          }.bind(this));
+        } else {
+          this.fit();
+        }
+      }
+    },
+
+    /**
+     * Positions and fits the element into the `fitInto` element.
+     */
+    fit: function() {
+      this.position();
+      this.constrain();
+      this.center();
+    },
+
+    /**
+     * Memoize information needed to position and size the target element.
+     * @suppress {deprecated}
+     */
+    _discoverInfo: function() {
+      if (this._fitInfo) {
+        return;
+      }
+      var target = window.getComputedStyle(this);
+      var sizer = window.getComputedStyle(this.sizingTarget);
+
+      this._fitInfo = {
+        inlineStyle: {
+          top: this.style.top || '',
+          left: this.style.left || '',
+          position: this.style.position || ''
+        },
+        sizerInlineStyle: {
+          maxWidth: this.sizingTarget.style.maxWidth || '',
+          maxHeight: this.sizingTarget.style.maxHeight || '',
+          boxSizing: this.sizingTarget.style.boxSizing || ''
+        },
+        positionedBy: {
+          vertically: target.top !== 'auto' ? 'top' : (target.bottom !== 'auto' ?
+            'bottom' : null),
+          horizontally: target.left !== 'auto' ? 'left' : (target.right !== 'auto' ?
+            'right' : null)
+        },
+        sizedBy: {
+          height: sizer.maxHeight !== 'none',
+          width: sizer.maxWidth !== 'none',
+          minWidth: parseInt(sizer.minWidth, 10) || 0,
+          minHeight: parseInt(sizer.minHeight, 10) || 0
+        },
+        margin: {
+          top: parseInt(target.marginTop, 10) || 0,
+          right: parseInt(target.marginRight, 10) || 0,
+          bottom: parseInt(target.marginBottom, 10) || 0,
+          left: parseInt(target.marginLeft, 10) || 0
+        }
+      };
+
+      // Support these properties until they are removed.
+      if (this.verticalOffset) {
+        this._fitInfo.margin.top = this._fitInfo.margin.bottom = this.verticalOffset;
+        this._fitInfo.inlineStyle.marginTop = this.style.marginTop || '';
+        this._fitInfo.inlineStyle.marginBottom = this.style.marginBottom || '';
+        this.style.marginTop = this.style.marginBottom = this.verticalOffset + 'px';
+      }
+      if (this.horizontalOffset) {
+        this._fitInfo.margin.left = this._fitInfo.margin.right = this.horizontalOffset;
+        this._fitInfo.inlineStyle.marginLeft = this.style.marginLeft || '';
+        this._fitInfo.inlineStyle.marginRight = this.style.marginRight || '';
+        this.style.marginLeft = this.style.marginRight = this.horizontalOffset + 'px';
+      }
+    },
+
+    /**
+     * Resets the target element's position and size constraints, and clear
+     * the memoized data.
+     */
+    resetFit: function() {
+      var info = this._fitInfo || {};
+      for (var property in info.sizerInlineStyle) {
+        this.sizingTarget.style[property] = info.sizerInlineStyle[property];
+      }
+      for (var property in info.inlineStyle) {
+        this.style[property] = info.inlineStyle[property];
+      }
+
+      this._fitInfo = null;
+    },
+
+    /**
+     * Equivalent to calling `resetFit()` and `fit()`. Useful to call this after
+     * the element or the `fitInto` element has been resized, or if any of the
+     * positioning properties (e.g. `horizontalAlign, verticalAlign`) is updated.
+     * It preserves the scroll position of the sizingTarget.
+     */
+    refit: function() {
+      var scrollLeft = this.sizingTarget.scrollLeft;
+      var scrollTop = this.sizingTarget.scrollTop;
+      this.resetFit();
+      this.fit();
+      this.sizingTarget.scrollLeft = scrollLeft;
+      this.sizingTarget.scrollTop = scrollTop;
+    },
+
+    /**
+     * Positions the element according to `horizontalAlign, verticalAlign`.
+     */
+    position: function() {
+      if (!this.horizontalAlign && !this.verticalAlign) {
+        // needs to be centered, and it is done after constrain.
+        return;
+      }
+      this._discoverInfo();
+
+      this.style.position = 'fixed';
+      // Need border-box for margin/padding.
+      this.sizingTarget.style.boxSizing = 'border-box';
+      // Set to 0, 0 in order to discover any offset caused by parent stacking contexts.
+      this.style.left = '0px';
+      this.style.top = '0px';
+
+      var rect = this.getBoundingClientRect();
+      var positionRect = this.__getNormalizedRect(this.positionTarget);
+      var fitRect = this.__getNormalizedRect(this.fitInto);
+
+      var margin = this._fitInfo.margin;
+
+      // Consider the margin as part of the size for position calculations.
+      var size = {
+        width: rect.width + margin.left + margin.right,
+        height: rect.height + margin.top + margin.bottom
+      };
+
+      var position = this.__getPosition(this._localeHorizontalAlign, this.verticalAlign, size, positionRect, fitRect);
+
+      var left = position.left + margin.left;
+      var top = position.top + margin.top;
+
+      // Use original size (without margin).
+      var right = Math.min(fitRect.right - margin.right, left + rect.width);
+      var bottom = Math.min(fitRect.bottom - margin.bottom, top + rect.height);
+
+      var minWidth = this._fitInfo.sizedBy.minWidth;
+      var minHeight = this._fitInfo.sizedBy.minHeight;
+      if (left < margin.left) {
+        left = margin.left;
+        if (right - left < minWidth) {
+          left = right - minWidth;
+        }
+      }
+      if (top < margin.top) {
+        top = margin.top;
+        if (bottom - top < minHeight) {
+          top = bottom - minHeight;
+        }
+      }
+
+      this.sizingTarget.style.maxWidth = (right - left) + 'px';
+      this.sizingTarget.style.maxHeight = (bottom - top) + 'px';
+
+      // Remove the offset caused by any stacking context.
+      this.style.left = (left - rect.left) + 'px';
+      this.style.top = (top - rect.top) + 'px';
+    },
+
+    /**
+     * Constrains the size of the element to `fitInto` by setting `max-height`
+     * and/or `max-width`.
+     */
+    constrain: function() {
+      if (this.horizontalAlign || this.verticalAlign) {
+        return;
+      }
+      this._discoverInfo();
+
+      var info = this._fitInfo;
+      // position at (0px, 0px) if not already positioned, so we can measure the natural size.
+      if (!info.positionedBy.vertically) {
+        this.style.position = 'fixed';
+        this.style.top = '0px';
+      }
+      if (!info.positionedBy.horizontally) {
+        this.style.position = 'fixed';
+        this.style.left = '0px';
+      }
+
+      // need border-box for margin/padding
+      this.sizingTarget.style.boxSizing = 'border-box';
+      // constrain the width and height if not already set
+      var rect = this.getBoundingClientRect();
+      if (!info.sizedBy.height) {
+        this.__sizeDimension(rect, info.positionedBy.vertically, 'top', 'bottom', 'Height');
+      }
+      if (!info.sizedBy.width) {
+        this.__sizeDimension(rect, info.positionedBy.horizontally, 'left', 'right', 'Width');
+      }
+    },
+
+    /**
+     * @protected
+     * @deprecated
+     */
+    _sizeDimension: function(rect, positionedBy, start, end, extent) {
+      this.__sizeDimension(rect, positionedBy, start, end, extent);
+    },
+
+    /**
+     * @private
+     */
+    __sizeDimension: function(rect, positionedBy, start, end, extent) {
+      var info = this._fitInfo;
+      var fitRect = this.__getNormalizedRect(this.fitInto);
+      var max = extent === 'Width' ? fitRect.width : fitRect.height;
+      var flip = (positionedBy === end);
+      var offset = flip ? max - rect[end] : rect[start];
+      var margin = info.margin[flip ? start : end];
+      var offsetExtent = 'offset' + extent;
+      var sizingOffset = this[offsetExtent] - this.sizingTarget[offsetExtent];
+      this.sizingTarget.style['max' + extent] = (max - margin - offset - sizingOffset) + 'px';
+    },
+
+    /**
+     * Centers horizontally and vertically if not already positioned. This also sets
+     * `position:fixed`.
+     */
+    center: function() {
+      if (this.horizontalAlign || this.verticalAlign) {
+        return;
+      }
+      this._discoverInfo();
+
+      var positionedBy = this._fitInfo.positionedBy;
+      if (positionedBy.vertically && positionedBy.horizontally) {
+        // Already positioned.
+        return;
+      }
+      // Need position:fixed to center
+      this.style.position = 'fixed';
+      // Take into account the offset caused by parents that create stacking
+      // contexts (e.g. with transform: translate3d). Translate to 0,0 and
+      // measure the bounding rect.
+      if (!positionedBy.vertically) {
+        this.style.top = '0px';
+      }
+      if (!positionedBy.horizontally) {
+        this.style.left = '0px';
+      }
+      // It will take in consideration margins and transforms
+      var rect = this.getBoundingClientRect();
+      var fitRect = this.__getNormalizedRect(this.fitInto);
+      if (!positionedBy.vertically) {
+        var top = fitRect.top - rect.top + (fitRect.height - rect.height) / 2;
+        this.style.top = top + 'px';
+      }
+      if (!positionedBy.horizontally) {
+        var left = fitRect.left - rect.left + (fitRect.width - rect.width) / 2;
+        this.style.left = left + 'px';
+      }
+    },
+
+    __getNormalizedRect: function(target) {
+      if (target === document.documentElement || target === window) {
+        return {
+          top: 0,
+          left: 0,
+          width: window.innerWidth,
+          height: window.innerHeight,
+          right: window.innerWidth,
+          bottom: window.innerHeight
+        };
+      }
+      return target.getBoundingClientRect();
+    },
+
+    __getCroppedArea: function(position, size, fitRect) {
+      var verticalCrop = Math.min(0, position.top) + Math.min(0, fitRect.bottom - (position.top + size.height));
+      var horizontalCrop = Math.min(0, position.left) + Math.min(0, fitRect.right - (position.left + size.width));
+      return Math.abs(verticalCrop) * size.width + Math.abs(horizontalCrop) * size.height;
+    },
+
+
+    __getPosition: function(hAlign, vAlign, size, positionRect, fitRect) {
+      // All the possible configurations.
+      // Ordered as top-left, top-right, bottom-left, bottom-right.
+      var positions = [{
+        verticalAlign: 'top',
+        horizontalAlign: 'left',
+        top: positionRect.top,
+        left: positionRect.left
+      }, {
+        verticalAlign: 'top',
+        horizontalAlign: 'right',
+        top: positionRect.top,
+        left: positionRect.right - size.width
+      }, {
+        verticalAlign: 'bottom',
+        horizontalAlign: 'left',
+        top: positionRect.bottom - size.height,
+        left: positionRect.left
+      }, {
+        verticalAlign: 'bottom',
+        horizontalAlign: 'right',
+        top: positionRect.bottom - size.height,
+        left: positionRect.right - size.width
+      }];
+
+      if (this.noOverlap) {
+        // Duplicate.
+        for (var i = 0, l = positions.length; i < l; i++) {
+          var copy = {};
+          for (var key in positions[i]) {
+            copy[key] = positions[i][key];
+          }
+          positions.push(copy);
+        }
+        // Horizontal overlap only.
+        positions[0].top = positions[1].top += positionRect.height;
+        positions[2].top = positions[3].top -= positionRect.height;
+        // Vertical overlap only.
+        positions[4].left = positions[6].left += positionRect.width;
+        positions[5].left = positions[7].left -= positionRect.width;
+      }
+
+      // Consider auto as null for coding convenience.
+      vAlign = vAlign === 'auto' ? null : vAlign;
+      hAlign = hAlign === 'auto' ? null : hAlign;
+
+      var position;
+      for (var i = 0; i < positions.length; i++) {
+        var pos = positions[i];
+
+        // If both vAlign and hAlign are defined, return exact match.
+        // For dynamicAlign and noOverlap we'll have more than one candidate, so
+        // we'll have to check the croppedArea to make the best choice.
+        if (!this.dynamicAlign && !this.noOverlap &&
+            pos.verticalAlign === vAlign && pos.horizontalAlign === hAlign) {
+          position = pos;
+          break;
+        }
+
+        // Align is ok if alignment preferences are respected. If no preferences,
+        // it is considered ok.
+        var alignOk = (!vAlign || pos.verticalAlign === vAlign) &&
+                      (!hAlign || pos.horizontalAlign === hAlign);
+
+        // Filter out elements that don't match the alignment (if defined).
+        // With dynamicAlign, we need to consider all the positions to find the
+        // one that minimizes the cropped area.
+        if (!this.dynamicAlign && !alignOk) {
+          continue;
+        }
+
+        position = position || pos;
+        pos.croppedArea = this.__getCroppedArea(pos, size, fitRect);
+        var diff = pos.croppedArea - position.croppedArea;
+        // Check which crops less. If it crops equally, check if align is ok.
+        if (diff < 0 || (diff === 0 && alignOk)) {
+          position = pos;
+        }
+        // If not cropped and respects the align requirements, keep it.
+        // This allows to prefer positions overlapping horizontally over the
+        // ones overlapping vertically.
+        if (position.croppedArea === 0 && alignOk) {
+          break;
+        }
+      }
+
+      return position;
+    }
+
+  };
+</script>
+<!--
+@license
+Copyright (c) 2015 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+--><!--
+`iron-overlay-backdrop` is a backdrop used by `Polymer.IronOverlayBehavior`. It should be a
+singleton.
+
+### Styling
+
+The following custom properties and mixins are available for styling.
+
+Custom property | Description | Default
+-------------------------------------------|------------------------|---------
+`--iron-overlay-backdrop-background-color` | Backdrop background color                                     | #000
+`--iron-overlay-backdrop-opacity`          | Backdrop opacity                                              | 0.6
+`--iron-overlay-backdrop`                  | Mixin applied to `iron-overlay-backdrop`.                      | {}
+`--iron-overlay-backdrop-opened`           | Mixin applied to `iron-overlay-backdrop` when it is displayed | {}
 -->
 
-<dom-module id="iron-collapse" assetpath="bower_components/iron-collapse/">
+<dom-module id="iron-overlay-backdrop" assetpath="bower_components/iron-overlay-behavior/">
 
   <template>
-
     <style>
       :host {
-        display: block;
-        transition-duration: 300ms;
-        overflow: visible;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: var(--iron-overlay-backdrop-background-color, #000);
+        opacity: 0;
+        transition: opacity 0.2s;
+        pointer-events: none;
+        @apply(--iron-overlay-backdrop);
       }
 
-      :host(.iron-collapse-closed) {
-        display: none;
-      }
-
-      :host(:not(.iron-collapse-opened)) {
-        overflow: hidden;
+      :host(.opened) {
+        opacity: var(--iron-overlay-backdrop-opacity, 0.6);
+        pointer-events: auto;
+        @apply(--iron-overlay-backdrop-opened);
       }
     </style>
 
     <content></content>
-
   </template>
 
 </dom-module>
 
 <script>
+(function() {
+'use strict';
 
   Polymer({
 
-    is: 'iron-collapse',
-
-    behaviors: [
-      Polymer.IronResizableBehavior
-    ],
+    is: 'iron-overlay-backdrop',
 
     properties: {
 
       /**
-       * If true, the orientation is horizontal; otherwise is vertical.
-       *
-       * @attribute horizontal
-       */
-      horizontal: {
-        type: Boolean,
-        value: false,
-        observer: '_horizontalChanged'
-      },
-
-      /**
-       * Set opened to true to show the collapse element and to false to hide it.
-       *
-       * @attribute opened
+       * Returns true if the backdrop is opened.
        */
       opened: {
+        reflectToAttribute: true,
         type: Boolean,
         value: false,
-        notify: true,
         observer: '_openedChanged'
-      },
+      }
 
-      /**
-       * Set noAnimation to true to disable animations
-       *
-       * @attribute noAnimation
-       */
-      noAnimation: {
-        type: Boolean
-      },
-
-    },
-
-    get dimension() {
-      return this.horizontal ? 'width' : 'height';
-    },
-
-    /**
-     * `maxWidth` or `maxHeight`.
-     * @private
-     */
-    get _dimensionMax() {
-      return this.horizontal ? 'maxWidth' : 'maxHeight';
-    },
-
-    /**
-     * `max-width` or `max-height`.
-     * @private
-     */
-    get _dimensionMaxCss() {
-      return this.horizontal ? 'max-width' : 'max-height';
-    },
-
-    hostAttributes: {
-      role: 'group',
-      'aria-hidden': 'true',
-      'aria-expanded': 'false'
     },
 
     listeners: {
-      transitionend: '_transitionEnd'
+      'transitionend': '_onTransitionend'
+    },
+
+    created: function() {
+      // Used to cancel previous requestAnimationFrame calls when opened changes.
+      this.__openedRaf = null;
     },
 
     attached: function() {
-      // It will take care of setting correct classes and styles.
-      this._transitionEnd();
+      this.opened && this._openedChanged(this.opened);
     },
 
     /**
-     * Toggle the opened state.
-     *
-     * @method toggle
+     * Appends the backdrop to document body if needed.
      */
-    toggle: function() {
-      this.opened = !this.opened;
+    prepare: function() {
+      if (this.opened && !this.parentNode) {
+        Polymer.dom(document.body).appendChild(this);
+      }
     },
 
-    show: function() {
+    /**
+     * Shows the backdrop.
+     */
+    open: function() {
       this.opened = true;
     },
 
-    hide: function() {
+    /**
+     * Hides the backdrop.
+     */
+    close: function() {
       this.opened = false;
     },
 
     /**
-     * Updates the size of the element.
-     * @param {string} size The new value for `maxWidth`/`maxHeight` as css property value, usually `auto` or `0px`.
-     * @param {boolean=} animated if `true` updates the size with an animation, otherwise without.
+     * Removes the backdrop from document body if needed.
      */
-    updateSize: function(size, animated) {
-      // No change!
-      var curSize = this.style[this._dimensionMax];
-      if (curSize === size || (size === 'auto' && !curSize)) {
+    complete: function() {
+      if (!this.opened && this.parentNode === document.body) {
+        Polymer.dom(this.parentNode).removeChild(this);
+      }
+    },
+
+    _onTransitionend: function(event) {
+      if (event && event.target === this) {
+        this.complete();
+      }
+    },
+
+    /**
+     * @param {boolean} opened
+     * @private
+     */
+    _openedChanged: function(opened) {
+      if (opened) {
+        // Auto-attach.
+        this.prepare();
+      } else {
+        // Animation might be disabled via the mixin or opacity custom property.
+        // If it is disabled in other ways, it's up to the user to call complete.
+        var cs = window.getComputedStyle(this);
+        if (cs.transitionDuration === '0s' || cs.opacity == 0) {
+          this.complete();
+        }
+      }
+
+      if (!this.isAttached) {
         return;
       }
 
-      this._updateTransition(false);
-      // If we can animate, must do some prep work.
-      if (animated && !this.noAnimation && this._isDisplayed) {
-        // Animation will start at the current size.
-        var startSize = this._calcSize();
-        // For `auto` we must calculate what is the final size for the animation.
-        // After the transition is done, _transitionEnd will set the size back to `auto`.
-        if (size === 'auto') {
-          this.style[this._dimensionMax] = '';
-          size = this._calcSize();
-        }
-        // Go to startSize without animation.
-        this.style[this._dimensionMax] = startSize;
-        // Force layout to ensure transition will go. Set scrollTop to itself
-        // so that compilers won't remove it.
-        this.scrollTop = this.scrollTop;
-        // Enable animation.
-        this._updateTransition(true);
+      // Always cancel previous requestAnimationFrame.
+      if (this.__openedRaf) {
+        window.cancelAnimationFrame(this.__openedRaf);
+        this.__openedRaf = null;
       }
-      // Set the final size.
-      if (size === 'auto') {
-        this.style[this._dimensionMax] = '';
+      // Force relayout to ensure proper transitions.
+      this.scrollTop = this.scrollTop;
+      this.__openedRaf = window.requestAnimationFrame(function() {
+        this.__openedRaf = null;
+        this.toggleClass('opened', this.opened);
+      }.bind(this));
+    }
+  });
+
+})();
+
+</script>
+<script>
+
+  /**
+   * @struct
+   * @constructor
+   * @private
+   */
+  Polymer.IronOverlayManagerClass = function() {
+    /**
+     * Used to keep track of the opened overlays.
+     * @private {Array<Element>}
+     */
+    this._overlays = [];
+
+    /**
+     * iframes have a default z-index of 100,
+     * so this default should be at least that.
+     * @private {number}
+     */
+    this._minimumZ = 101;
+
+    /**
+     * Memoized backdrop element.
+     * @private {Element|null}
+     */
+    this._backdropElement = null;
+
+    // Enable document-wide tap recognizer.
+    Polymer.Gestures.add(document, 'tap', null);
+    // Need to have useCapture=true, Polymer.Gestures doesn't offer that.
+    document.addEventListener('tap', this._onCaptureClick.bind(this), true);
+    document.addEventListener('focus', this._onCaptureFocus.bind(this), true);
+    document.addEventListener('keydown', this._onCaptureKeyDown.bind(this), true);
+  };
+
+  Polymer.IronOverlayManagerClass.prototype = {
+
+    constructor: Polymer.IronOverlayManagerClass,
+
+    /**
+     * The shared backdrop element.
+     * @type {!Element} backdropElement
+     */
+    get backdropElement() {
+      if (!this._backdropElement) {
+        this._backdropElement = document.createElement('iron-overlay-backdrop');
+      }
+      return this._backdropElement;
+    },
+
+    /**
+     * The deepest active element.
+     * @type {!Element} activeElement the active element
+     */
+    get deepActiveElement() {
+      // document.activeElement can be null
+      // https://developer.mozilla.org/en-US/docs/Web/API/Document/activeElement
+      // In case of null, default it to document.body.
+      var active = document.activeElement || document.body;
+      while (active.root && Polymer.dom(active.root).activeElement) {
+        active = Polymer.dom(active.root).activeElement;
+      }
+      return active;
+    },
+
+    /**
+     * Brings the overlay at the specified index to the front.
+     * @param {number} i
+     * @private
+     */
+    _bringOverlayAtIndexToFront: function(i) {
+      var overlay = this._overlays[i];
+      if (!overlay) {
+        return;
+      }
+      var lastI = this._overlays.length - 1;
+      var currentOverlay = this._overlays[lastI];
+      // Ensure always-on-top overlay stays on top.
+      if (currentOverlay && this._shouldBeBehindOverlay(overlay, currentOverlay)) {
+        lastI--;
+      }
+      // If already the top element, return.
+      if (i >= lastI) {
+        return;
+      }
+      // Update z-index to be on top.
+      var minimumZ = Math.max(this.currentOverlayZ(), this._minimumZ);
+      if (this._getZ(overlay) <= minimumZ) {
+        this._applyOverlayZ(overlay, minimumZ);
+      }
+
+      // Shift other overlays behind the new on top.
+      while (i < lastI) {
+        this._overlays[i] = this._overlays[i + 1];
+        i++;
+      }
+      this._overlays[lastI] = overlay;
+    },
+
+    /**
+     * Adds the overlay and updates its z-index if it's opened, or removes it if it's closed.
+     * Also updates the backdrop z-index.
+     * @param {!Element} overlay
+     */
+    addOrRemoveOverlay: function(overlay) {
+      if (overlay.opened) {
+        this.addOverlay(overlay);
       } else {
-        this.style[this._dimensionMax] = size;
+        this.removeOverlay(overlay);
       }
     },
 
     /**
-     * enableTransition() is deprecated, but left over so it doesn't break existing code.
-     * Please use `noAnimation` property instead.
-     *
-     * @method enableTransition
-     * @deprecated since version 1.0.4
+     * Tracks overlays for z-index and focus management.
+     * Ensures the last added overlay with always-on-top remains on top.
+     * @param {!Element} overlay
      */
-    enableTransition: function(enabled) {
-      Polymer.Base._warn('`enableTransition()` is deprecated, use `noAnimation` instead.');
-      this.noAnimation = !enabled;
+    addOverlay: function(overlay) {
+      var i = this._overlays.indexOf(overlay);
+      if (i >= 0) {
+        this._bringOverlayAtIndexToFront(i);
+        this.trackBackdrop();
+        return;
+      }
+      var insertionIndex = this._overlays.length;
+      var currentOverlay = this._overlays[insertionIndex - 1];
+      var minimumZ = Math.max(this._getZ(currentOverlay), this._minimumZ);
+      var newZ = this._getZ(overlay);
+
+      // Ensure always-on-top overlay stays on top.
+      if (currentOverlay && this._shouldBeBehindOverlay(overlay, currentOverlay)) {
+        // This bumps the z-index of +2.
+        this._applyOverlayZ(currentOverlay, minimumZ);
+        insertionIndex--;
+        // Update minimumZ to match previous overlay's z-index.
+        var previousOverlay = this._overlays[insertionIndex - 1];
+        minimumZ = Math.max(this._getZ(previousOverlay), this._minimumZ);
+      }
+
+      // Update z-index and insert overlay.
+      if (newZ <= minimumZ) {
+        this._applyOverlayZ(overlay, minimumZ);
+      }
+      this._overlays.splice(insertionIndex, 0, overlay);
+
+      // Get focused node.
+      var element = this.deepActiveElement;
+      overlay.restoreFocusNode = this._overlayParent(element) ? null : element;
+      this.trackBackdrop();
     },
 
-    _updateTransition: function(enabled) {
-      this.style.transitionDuration = (enabled && !this.noAnimation) ? '' : '0s';
+    /**
+     * @param {!Element} overlay
+     */
+    removeOverlay: function(overlay) {
+      var i = this._overlays.indexOf(overlay);
+      if (i === -1) {
+        return;
+      }
+      this._overlays.splice(i, 1);
+
+      var node = overlay.restoreFocusOnClose ? overlay.restoreFocusNode : null;
+      overlay.restoreFocusNode = null;
+      // Focus back only if still contained in document.body
+      if (node && Polymer.dom(document.body).deepContains(node)) {
+        node.focus();
+      }
+      this.trackBackdrop();
     },
 
-    _horizontalChanged: function() {
-      this.style.transitionProperty = this._dimensionMaxCss;
-      var otherDimension = this._dimensionMax === 'maxWidth' ? 'maxHeight' : 'maxWidth';
-      this.style[otherDimension] = '';
-      this.updateSize(this.opened ? 'auto' : '0px', false);
+    /**
+     * Returns the current overlay.
+     * @return {Element|undefined}
+     */
+    currentOverlay: function() {
+      var i = this._overlays.length - 1;
+      return this._overlays[i];
+    },
+
+    /**
+     * Returns the current overlay z-index.
+     * @return {number}
+     */
+    currentOverlayZ: function() {
+      return this._getZ(this.currentOverlay());
+    },
+
+    /**
+     * Ensures that the minimum z-index of new overlays is at least `minimumZ`.
+     * This does not effect the z-index of any existing overlays.
+     * @param {number} minimumZ
+     */
+    ensureMinimumZ: function(minimumZ) {
+      this._minimumZ = Math.max(this._minimumZ, minimumZ);
+    },
+
+    focusOverlay: function() {
+      var current = /** @type {?} */ (this.currentOverlay());
+      // We have to be careful to focus the next overlay _after_ any current
+      // transitions are complete (due to the state being toggled prior to the
+      // transition). Otherwise, we risk infinite recursion when a transitioning
+      // (closed) overlay becomes the current overlay.
+      //
+      // NOTE: We make the assumption that any overlay that completes a transition
+      // will call into focusOverlay to kick the process back off. Currently:
+      // transitionend -> _applyFocus -> focusOverlay.
+      if (current && !current.transitioning) {
+        current._applyFocus();
+      }
+    },
+
+    /**
+     * Updates the backdrop z-index.
+     */
+    trackBackdrop: function() {
+      var overlay = this._overlayWithBackdrop();
+      // Avoid creating the backdrop if there is no overlay with backdrop.
+      if (!overlay && !this._backdropElement) {
+        return;
+      }
+      this.backdropElement.style.zIndex = this._getZ(overlay) - 1;
+      this.backdropElement.opened = !!overlay;
+    },
+
+    /**
+     * @return {Array<Element>}
+     */
+    getBackdrops: function() {
+      var backdrops = [];
+      for (var i = 0; i < this._overlays.length; i++) {
+        if (this._overlays[i].withBackdrop) {
+          backdrops.push(this._overlays[i]);
+        }
+      }
+      return backdrops;
+    },
+
+    /**
+     * Returns the z-index for the backdrop.
+     * @return {number}
+     */
+    backdropZ: function() {
+      return this._getZ(this._overlayWithBackdrop()) - 1;
+    },
+
+    /**
+     * Returns the first opened overlay that has a backdrop.
+     * @return {Element|undefined}
+     * @private
+     */
+    _overlayWithBackdrop: function() {
+      for (var i = 0; i < this._overlays.length; i++) {
+        if (this._overlays[i].withBackdrop) {
+          return this._overlays[i];
+        }
+      }
+    },
+
+    /**
+     * Calculates the minimum z-index for the overlay.
+     * @param {Element=} overlay
+     * @private
+     */
+    _getZ: function(overlay) {
+      var z = this._minimumZ;
+      if (overlay) {
+        var z1 = Number(overlay.style.zIndex || window.getComputedStyle(overlay).zIndex);
+        // Check if is a number
+        // Number.isNaN not supported in IE 10+
+        if (z1 === z1) {
+          z = z1;
+        }
+      }
+      return z;
+    },
+
+    /**
+     * @param {!Element} element
+     * @param {number|string} z
+     * @private
+     */
+    _setZ: function(element, z) {
+      element.style.zIndex = z;
+    },
+
+    /**
+     * @param {!Element} overlay
+     * @param {number} aboveZ
+     * @private
+     */
+    _applyOverlayZ: function(overlay, aboveZ) {
+      this._setZ(overlay, aboveZ + 2);
+    },
+
+    /**
+     * Returns the overlay containing the provided node. If the node is an overlay,
+     * it returns the node.
+     * @param {Element=} node
+     * @return {Element|undefined}
+     * @private
+     */
+    _overlayParent: function(node) {
+      while (node && node !== document.body) {
+        // Check if it is an overlay.
+        if (node._manager === this) {
+          return node;
+        }
+        // Use logical parentNode, or native ShadowRoot host.
+        node = Polymer.dom(node).parentNode || node.host;
+      }
+    },
+
+    /**
+     * Returns the deepest overlay in the path.
+     * @param {Array<Element>=} path
+     * @return {Element|undefined}
+     * @suppress {missingProperties}
+     * @private
+     */
+    _overlayInPath: function(path) {
+      path = path || [];
+      for (var i = 0; i < path.length; i++) {
+        if (path[i]._manager === this) {
+          return path[i];
+        }
+      }
+    },
+
+    /**
+     * Ensures the click event is delegated to the right overlay.
+     * @param {!Event} event
+     * @private
+     */
+    _onCaptureClick: function(event) {
+      var overlay = /** @type {?} */ (this.currentOverlay());
+      // Check if clicked outside of top overlay.
+      if (overlay && this._overlayInPath(Polymer.dom(event).path) !== overlay) {
+        overlay._onCaptureClick(event);
+      }
+    },
+
+    /**
+     * Ensures the focus event is delegated to the right overlay.
+     * @param {!Event} event
+     * @private
+     */
+    _onCaptureFocus: function(event) {
+      var overlay = /** @type {?} */ (this.currentOverlay());
+      if (overlay) {
+        overlay._onCaptureFocus(event);
+      }
+    },
+
+    /**
+     * Ensures TAB and ESC keyboard events are delegated to the right overlay.
+     * @param {!Event} event
+     * @private
+     */
+    _onCaptureKeyDown: function(event) {
+      var overlay = /** @type {?} */ (this.currentOverlay());
+      if (overlay) {
+        if (Polymer.IronA11yKeysBehavior.keyboardEventMatchesKeys(event, 'esc')) {
+          overlay._onCaptureEsc(event);
+        } else if (Polymer.IronA11yKeysBehavior.keyboardEventMatchesKeys(event, 'tab')) {
+          overlay._onCaptureTab(event);
+        }
+      }
+    },
+
+    /**
+     * Returns if the overlay1 should be behind overlay2.
+     * @param {!Element} overlay1
+     * @param {!Element} overlay2
+     * @return {boolean}
+     * @suppress {missingProperties}
+     * @private
+     */
+    _shouldBeBehindOverlay: function(overlay1, overlay2) {
+      return !overlay1.alwaysOnTop && overlay2.alwaysOnTop;
+    }
+  };
+
+  Polymer.IronOverlayManager = new Polymer.IronOverlayManagerClass();
+</script><!--
+@license
+Copyright (c) 2015 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+<script>
+(function() {
+'use strict';
+
+/**
+Use `Polymer.IronOverlayBehavior` to implement an element that can be hidden or shown, and displays
+on top of other content. It includes an optional backdrop, and can be used to implement a variety
+of UI controls including dialogs and drop downs. Multiple overlays may be displayed at once.
+
+See the [demo source code](https://github.com/PolymerElements/iron-overlay-behavior/blob/master/demo/simple-overlay.html)
+for an example.
+
+### Closing and canceling
+
+An overlay may be hidden by closing or canceling. The difference between close and cancel is user
+intent. Closing generally implies that the user acknowledged the content on the overlay. By default,
+it will cancel whenever the user taps outside it or presses the escape key. This behavior is
+configurable with the `no-cancel-on-esc-key` and the `no-cancel-on-outside-click` properties.
+`close()` should be called explicitly by the implementer when the user interacts with a control
+in the overlay element. When the dialog is canceled, the overlay fires an 'iron-overlay-canceled'
+event. Call `preventDefault` on this event to prevent the overlay from closing.
+
+### Positioning
+
+By default the element is sized and positioned to fit and centered inside the window. You can
+position and size it manually using CSS. See `Polymer.IronFitBehavior`.
+
+### Backdrop
+
+Set the `with-backdrop` attribute to display a backdrop behind the overlay. The backdrop is
+appended to `<body>` and is of type `<iron-overlay-backdrop>`. See its doc page for styling
+options.
+
+In addition, `with-backdrop` will wrap the focus within the content in the light DOM.
+Override the [`_focusableNodes` getter](#Polymer.IronOverlayBehavior:property-_focusableNodes)
+to achieve a different behavior.
+
+### Limitations
+
+The element is styled to appear on top of other content by setting its `z-index` property. You
+must ensure no element has a stacking context with a higher `z-index` than its parent stacking
+context. You should place this element as a child of `<body>` whenever possible.
+
+@demo demo/index.html
+@polymerBehavior Polymer.IronOverlayBehavior
+*/
+
+  Polymer.IronOverlayBehaviorImpl = {
+
+    properties: {
+
+      /**
+       * True if the overlay is currently displayed.
+       */
+      opened: {
+        observer: '_openedChanged',
+        type: Boolean,
+        value: false,
+        notify: true
+      },
+
+      /**
+       * True if the overlay was canceled when it was last closed.
+       */
+      canceled: {
+        observer: '_canceledChanged',
+        readOnly: true,
+        type: Boolean,
+        value: false
+      },
+
+      /**
+       * Set to true to display a backdrop behind the overlay. It traps the focus
+       * within the light DOM of the overlay.
+       */
+      withBackdrop: {
+        observer: '_withBackdropChanged',
+        type: Boolean
+      },
+
+      /**
+       * Set to true to disable auto-focusing the overlay or child nodes with
+       * the `autofocus` attribute` when the overlay is opened.
+       */
+      noAutoFocus: {
+        type: Boolean,
+        value: false
+      },
+
+      /**
+       * Set to true to disable canceling the overlay with the ESC key.
+       */
+      noCancelOnEscKey: {
+        type: Boolean,
+        value: false
+      },
+
+      /**
+       * Set to true to disable canceling the overlay by clicking outside it.
+       */
+      noCancelOnOutsideClick: {
+        type: Boolean,
+        value: false
+      },
+
+      /**
+       * Contains the reason(s) this overlay was last closed (see `iron-overlay-closed`).
+       * `IronOverlayBehavior` provides the `canceled` reason; implementers of the
+       * behavior can provide other reasons in addition to `canceled`.
+       */
+      closingReason: {
+        // was a getter before, but needs to be a property so other
+        // behaviors can override this.
+        type: Object
+      },
+
+      /**
+       * Set to true to enable restoring of focus when overlay is closed.
+       */
+      restoreFocusOnClose: {
+        type: Boolean,
+        value: false
+      },
+
+      /**
+       * Set to true to keep overlay always on top.
+       */
+      alwaysOnTop: {
+        type: Boolean
+      },
+
+      /**
+       * Shortcut to access to the overlay manager.
+       * @private
+       * @type {Polymer.IronOverlayManagerClass}
+       */
+      _manager: {
+        type: Object,
+        value: Polymer.IronOverlayManager
+      },
+
+      /**
+       * The node being focused.
+       * @type {?Node}
+       */
+      _focusedChild: {
+        type: Object
+      }
+
+    },
+
+    listeners: {
+      'iron-resize': '_onIronResize'
+    },
+
+    /**
+     * The backdrop element.
+     * @type {Element}
+     */
+    get backdropElement() {
+      return this._manager.backdropElement;
+    },
+
+    /**
+     * Returns the node to give focus to.
+     * @type {Node}
+     */
+    get _focusNode() {
+      return this._focusedChild || Polymer.dom(this).querySelector('[autofocus]') || this;
+    },
+
+    /**
+     * Array of nodes that can receive focus (overlay included), ordered by `tabindex`.
+     * This is used to retrieve which is the first and last focusable nodes in order
+     * to wrap the focus for overlays `with-backdrop`.
+     *
+     * If you know what is your content (specifically the first and last focusable children),
+     * you can override this method to return only `[firstFocusable, lastFocusable];`
+     * @type {Array<Node>}
+     * @protected
+     */
+    get _focusableNodes() {
+      // Elements that can be focused even if they have [disabled] attribute.
+      var FOCUSABLE_WITH_DISABLED = [
+        'a[href]',
+        'area[href]',
+        'iframe',
+        '[tabindex]',
+        '[contentEditable=true]'
+      ];
+
+      // Elements that cannot be focused if they have [disabled] attribute.
+      var FOCUSABLE_WITHOUT_DISABLED = [
+        'input',
+        'select',
+        'textarea',
+        'button'
+      ];
+
+      // Discard elements with tabindex=-1 (makes them not focusable).
+      var selector = FOCUSABLE_WITH_DISABLED.join(':not([tabindex="-1"]),') +
+        ':not([tabindex="-1"]),' +
+        FOCUSABLE_WITHOUT_DISABLED.join(':not([disabled]):not([tabindex="-1"]),') +
+        ':not([disabled]):not([tabindex="-1"])';
+
+      var focusables = Polymer.dom(this).querySelectorAll(selector);
+      if (this.tabIndex >= 0) {
+        // Insert at the beginning because we might have all elements with tabIndex = 0,
+        // and the overlay should be the first of the list.
+        focusables.splice(0, 0, this);
+      }
+      // Sort by tabindex.
+      return focusables.sort(function (a, b) {
+        if (a.tabIndex === b.tabIndex) {
+          return 0;
+        }
+        if (a.tabIndex === 0 || a.tabIndex > b.tabIndex) {
+          return 1;
+        }
+        return -1;
+      });
+    },
+
+    ready: function() {
+      // Used to skip calls to notifyResize and refit while the overlay is animating.
+      this.__isAnimating = false;
+      // with-backdrop needs tabindex to be set in order to trap the focus.
+      // If it is not set, IronOverlayBehavior will set it, and remove it if with-backdrop = false.
+      this.__shouldRemoveTabIndex = false;
+      // Used for wrapping the focus on TAB / Shift+TAB.
+      this.__firstFocusableNode = this.__lastFocusableNode = null;
+      // Used for requestAnimationFrame when opened changes.
+      this.__openChangedAsync = null;
+      // Used for requestAnimationFrame when iron-resize is fired.
+      this.__onIronResizeAsync = null;
+      this._ensureSetup();
+    },
+
+    attached: function() {
+      // Call _openedChanged here so that position can be computed correctly.
+      if (this.opened) {
+        this._openedChanged();
+      }
+      this._observer = Polymer.dom(this).observeNodes(this._onNodesChange);
+    },
+
+    detached: function() {
+      Polymer.dom(this).unobserveNodes(this._observer);
+      this._observer = null;
+      this.opened = false;
+    },
+
+    /**
+     * Toggle the opened state of the overlay.
+     */
+    toggle: function() {
+      this._setCanceled(false);
+      this.opened = !this.opened;
+    },
+
+    /**
+     * Open the overlay.
+     */
+    open: function() {
+      this._setCanceled(false);
+      this.opened = true;
+    },
+
+    /**
+     * Close the overlay.
+     */
+    close: function() {
+      this._setCanceled(false);
+      this.opened = false;
+    },
+
+    /**
+     * Cancels the overlay.
+     * @param {Event=} event The original event
+     */
+    cancel: function(event) {
+      var cancelEvent = this.fire('iron-overlay-canceled', event, {cancelable: true});
+      if (cancelEvent.defaultPrevented) {
+        return;
+      }
+
+      this._setCanceled(true);
+      this.opened = false;
+    },
+
+    _ensureSetup: function() {
+      if (this._overlaySetup) {
+        return;
+      }
+      this._overlaySetup = true;
+      this.style.outline = 'none';
+      this.style.display = 'none';
     },
 
     _openedChanged: function() {
-      this.setAttribute('aria-expanded', this.opened);
-      this.setAttribute('aria-hidden', !this.opened);
-
-      this.toggleClass('iron-collapse-closed', false);
-      this.toggleClass('iron-collapse-opened', false);
-      this.updateSize(this.opened ? 'auto' : '0px', true);
-
-      // Focus the current collapse.
       if (this.opened) {
-        this.focus();
+        this.removeAttribute('aria-hidden');
+      } else {
+        this.setAttribute('aria-hidden', 'true');
       }
-      if (this.noAnimation) {
-        this._transitionEnd();
+
+      // wait to call after ready only if we're initially open
+      if (!this._overlaySetup) {
+        return;
       }
+
+      if (this.__openChangedAsync) {
+        window.cancelAnimationFrame(this.__openChangedAsync);
+      }
+
+      // Synchronously remove the overlay.
+      // The adding is done asynchronously to go out of the scope of the event
+      // which might have generated the opening.
+      if (!this.opened) {
+        this._manager.removeOverlay(this);
+      }
+
+      // Defer any animation-related code on attached
+      // (_openedChanged gets called again on attached).
+      if (!this.isAttached) {
+        return;
+      }
+
+      this.__isAnimating = true;
+
+      // requestAnimationFrame for non-blocking rendering
+      this.__openChangedAsync = window.requestAnimationFrame(function() {
+        this.__openChangedAsync = null;
+        if (this.opened) {
+          this._manager.addOverlay(this);
+          this._prepareRenderOpened();
+          this._renderOpened();
+        } else {
+          // Move the focus before actually closing.
+          this._applyFocus();
+          this._renderClosed();
+        }
+      }.bind(this));
     },
 
-    _transitionEnd: function() {
-      if (this.opened) {
-        this.style[this._dimensionMax] = '';
+    _canceledChanged: function() {
+      this.closingReason = this.closingReason || {};
+      this.closingReason.canceled = this.canceled;
+    },
+
+    _withBackdropChanged: function() {
+      // If tabindex is already set, no need to override it.
+      if (this.withBackdrop && !this.hasAttribute('tabindex')) {
+        this.setAttribute('tabindex', '-1');
+        this.__shouldRemoveTabIndex = true;
+      } else if (this.__shouldRemoveTabIndex) {
+        this.removeAttribute('tabindex');
+        this.__shouldRemoveTabIndex = false;
       }
-      this.toggleClass('iron-collapse-closed', !this.opened);
-      this.toggleClass('iron-collapse-opened', this.opened);
-      this._updateTransition(false);
-      this.notifyResize();
+      if (this.opened && this.isAttached) {
+        this._manager.trackBackdrop();
+      }
     },
 
     /**
-     * Simplistic heuristic to detect if element has a parent with display: none
-     *
-     * @private
+     * tasks which must occur before opening; e.g. making the element visible.
+     * @protected
      */
-    get _isDisplayed() {
-      var rect = this.getBoundingClientRect();
-      for (var prop in rect) {
-        if (rect[prop] !== 0) return true;
+    _prepareRenderOpened: function() {
+
+      // Needed to calculate the size of the overlay so that transitions on its size
+      // will have the correct starting points.
+      this._preparePositioning();
+      this.refit();
+      this._finishPositioning();
+
+      // Move the focus to the child node with [autofocus].
+      this._applyFocus();
+
+      // Safari will apply the focus to the autofocus element when displayed for the first time,
+      // so we blur it. Later, _applyFocus will set the focus if necessary.
+      if (this.noAutoFocus && document.activeElement === this._focusNode) {
+        this._focusNode.blur();
       }
-      return false;
     },
 
-    _calcSize: function() {
-      return this.getBoundingClientRect()[this.dimension] + 'px';
+    /**
+     * Tasks which cause the overlay to actually open; typically play an animation.
+     * @protected
+     */
+    _renderOpened: function() {
+      this._finishRenderOpened();
+    },
+
+    /**
+     * Tasks which cause the overlay to actually close; typically play an animation.
+     * @protected
+     */
+    _renderClosed: function() {
+      this._finishRenderClosed();
+    },
+
+    /**
+     * Tasks to be performed at the end of open action. Will fire `iron-overlay-opened`.
+     * @protected
+     */
+    _finishRenderOpened: function() {
+
+      this.notifyResize();
+      this.__isAnimating = false;
+
+      // Store it so we don't query too much.
+      var focusableNodes = this._focusableNodes;
+      this.__firstFocusableNode = focusableNodes[0];
+      this.__lastFocusableNode = focusableNodes[focusableNodes.length - 1];
+
+      this.fire('iron-overlay-opened');
+    },
+
+    /**
+     * Tasks to be performed at the end of close action. Will fire `iron-overlay-closed`.
+     * @protected
+     */
+    _finishRenderClosed: function() {
+      // Hide the overlay and remove the backdrop.
+      this.style.display = 'none';
+      // Reset z-index only at the end of the animation.
+      this.style.zIndex = '';
+
+      this.notifyResize();
+      this.__isAnimating = false;
+      this.fire('iron-overlay-closed', this.closingReason);
+    },
+
+    _preparePositioning: function() {
+      this.style.transition = this.style.webkitTransition = 'none';
+      this.style.transform = this.style.webkitTransform = 'none';
+      this.style.display = '';
+    },
+
+    _finishPositioning: function() {
+      // First, make it invisible & reactivate animations.
+      this.style.display = 'none';
+      // Force reflow before re-enabling animations so that they don't start.
+      // Set scrollTop to itself so that Closure Compiler doesn't remove this.
+      this.scrollTop = this.scrollTop;
+      this.style.transition = this.style.webkitTransition = '';
+      this.style.transform = this.style.webkitTransform = '';
+      // Now that animations are enabled, make it visible again
+      this.style.display = '';
+      // Force reflow, so that following animations are properly started.
+      // Set scrollTop to itself so that Closure Compiler doesn't remove this.
+      this.scrollTop = this.scrollTop;
+    },
+
+    /**
+     * Applies focus according to the opened state.
+     * @protected
+     */
+    _applyFocus: function() {
+      if (this.opened) {
+        if (!this.noAutoFocus) {
+          this._focusNode.focus();
+        }
+      } else {
+        this._focusNode.blur();
+        this._focusedChild = null;
+        this._manager.focusOverlay();
+      }
+    },
+
+    /**
+     * Cancels (closes) the overlay. Call when click happens outside the overlay.
+     * @param {!Event} event
+     * @protected
+     */
+    _onCaptureClick: function(event) {
+      if (!this.noCancelOnOutsideClick) {
+        this.cancel(event);
+      }
+    },
+
+    /**
+     * Keeps track of the focused child. If withBackdrop, traps focus within overlay.
+     * @param {!Event} event
+     * @protected
+     */
+    _onCaptureFocus: function (event) {
+      if (!this.withBackdrop) {
+        return;
+      }
+      var path = Polymer.dom(event).path;
+      if (path.indexOf(this) === -1) {
+        event.stopPropagation();
+        this._applyFocus();
+      } else {
+        this._focusedChild = path[0];
+      }
+    },
+
+    /**
+     * Handles the ESC key event and cancels (closes) the overlay.
+     * @param {!Event} event
+     * @protected
+     */
+    _onCaptureEsc: function(event) {
+      if (!this.noCancelOnEscKey) {
+        this.cancel(event);
+      }
+    },
+
+    /**
+     * Handles TAB key events to track focus changes.
+     * Will wrap focus for overlays withBackdrop.
+     * @param {!Event} event
+     * @protected
+     */
+    _onCaptureTab: function(event) {
+      if (!this.withBackdrop) {
+        return;
+      }
+      // TAB wraps from last to first focusable.
+      // Shift + TAB wraps from first to last focusable.
+      var shift = event.shiftKey;
+      var nodeToCheck = shift ? this.__firstFocusableNode : this.__lastFocusableNode;
+      var nodeToSet = shift ? this.__lastFocusableNode : this.__firstFocusableNode;
+      var shouldWrap = false;
+      if (nodeToCheck === nodeToSet) {
+        // If nodeToCheck is the same as nodeToSet, it means we have an overlay
+        // with 0 or 1 focusables; in either case we still need to trap the
+        // focus within the overlay.
+        shouldWrap = true;
+      } else {
+        // In dom=shadow, the manager will receive focus changes on the main
+        // root but not the ones within other shadow roots, so we can't rely on
+        // _focusedChild, but we should check the deepest active element.
+        var focusedNode = this._manager.deepActiveElement;
+        // If the active element is not the nodeToCheck but the overlay itself,
+        // it means the focus is about to go outside the overlay, hence we
+        // should prevent that (e.g. user opens the overlay and hit Shift+TAB).
+        shouldWrap = (focusedNode === nodeToCheck || focusedNode === this);
+      }
+
+      if (shouldWrap) {
+        // When the overlay contains the last focusable element of the document
+        // and it's already focused, pressing TAB would move the focus outside
+        // the document (e.g. to the browser search bar). Similarly, when the
+        // overlay contains the first focusable element of the document and it's
+        // already focused, pressing Shift+TAB would move the focus outside the
+        // document (e.g. to the browser search bar).
+        // In both cases, we would not receive a focus event, but only a blur.
+        // In order to achieve focus wrapping, we prevent this TAB event and
+        // force the focus. This will also prevent the focus to temporarily move
+        // outside the overlay, which might cause scrolling.
+        event.preventDefault();
+        this._focusedChild = nodeToSet;
+        this._applyFocus();
+      }
+    },
+
+    /**
+     * Refits if the overlay is opened and not animating.
+     * @protected
+     */
+    _onIronResize: function() {
+      if (this.__onIronResizeAsync) {
+        window.cancelAnimationFrame(this.__onIronResizeAsync);
+        this.__onIronResizeAsync = null;
+      }
+      if (this.opened && !this.__isAnimating) {
+        this.__onIronResizeAsync = window.requestAnimationFrame(function() {
+          this.__onIronResizeAsync = null;
+          this.refit();
+        }.bind(this));
+      }
+    },
+
+    /**
+     * Will call notifyResize if overlay is opened.
+     * Can be overridden in order to avoid multiple observers on the same node.
+     * @protected
+     */
+    _onNodesChange: function() {
+      if (this.opened && !this.__isAnimating) {
+        this.notifyResize();
+      }
+    }
+  };
+
+  /** @polymerBehavior */
+  Polymer.IronOverlayBehavior = [Polymer.IronFitBehavior, Polymer.IronResizableBehavior, Polymer.IronOverlayBehaviorImpl];
+
+  /**
+   * Fired after the overlay opens.
+   * @event iron-overlay-opened
+   */
+
+  /**
+   * Fired when the overlay is canceled, but before it is closed.
+   * @event iron-overlay-canceled
+   * @param {Event} event The closing of the overlay can be prevented
+   * by calling `event.preventDefault()`. The `event.detail` is the original event that
+   * originated the canceling (e.g. ESC keyboard event or click event outside the overlay).
+   */
+
+  /**
+   * Fired after the overlay closes.
+   * @event iron-overlay-closed
+   * @param {Event} event The `event.detail` is the `closingReason` property
+   * (contains `canceled`, whether the overlay was canceled).
+   */
+
+})();
+</script><!--
+@license
+Copyright (c) 2015 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+<script>
+
+/**
+Use `Polymer.PaperDialogBehavior` and `paper-dialog-shared-styles.html` to implement a Material Design
+dialog.
+
+For example, if `<paper-dialog-impl>` implements this behavior:
+
+    <paper-dialog-impl>
+        <h2>Header</h2>
+        <div>Dialog body</div>
+        <div class="buttons">
+            <paper-button dialog-dismiss>Cancel</paper-button>
+            <paper-button dialog-confirm>Accept</paper-button>
+        </div>
+    </paper-dialog-impl>
+
+`paper-dialog-shared-styles.html` provide styles for a header, content area, and an action area for buttons.
+Use the `<h2>` tag for the header and the `buttons` class for the action area. You can use the
+`paper-dialog-scrollable` element (in its own repository) if you need a scrolling content area.
+
+Use the `dialog-dismiss` and `dialog-confirm` attributes on interactive controls to close the
+dialog. If the user dismisses the dialog with `dialog-confirm`, the `closingReason` will update
+to include `confirmed: true`.
+
+### Accessibility
+
+This element has `role="dialog"` by default. Depending on the context, it may be more appropriate
+to override this attribute with `role="alertdialog"`.
+
+If `modal` is set, the element will prevent the focus from exiting the element.
+It will also ensure that focus remains in the dialog.
+
+@hero hero.svg
+@demo demo/index.html
+@polymerBehavior Polymer.PaperDialogBehavior
+*/
+
+  Polymer.PaperDialogBehaviorImpl = {
+
+    hostAttributes: {
+      'role': 'dialog',
+      'tabindex': '-1'
+    },
+
+    properties: {
+
+      /**
+       * If `modal` is true, this implies `no-cancel-on-outside-click`, `no-cancel-on-esc-key` and `with-backdrop`.
+       */
+      modal: {
+        type: Boolean,
+        value: false
+      }
+
+    },
+
+    observers: [
+      '_modalChanged(modal, _readied)'
+    ],
+
+    listeners: {
+      'tap': '_onDialogClick'
+    },
+
+    ready: function () {
+      // Only now these properties can be read.
+      this.__prevNoCancelOnOutsideClick = this.noCancelOnOutsideClick;
+      this.__prevNoCancelOnEscKey = this.noCancelOnEscKey;
+      this.__prevWithBackdrop = this.withBackdrop;
+    },
+
+    _modalChanged: function(modal, readied) {
+      // modal implies noCancelOnOutsideClick, noCancelOnEscKey and withBackdrop.
+      // We need to wait for the element to be ready before we can read the
+      // properties values.
+      if (!readied) {
+        return;
+      }
+
+      if (modal) {
+        this.__prevNoCancelOnOutsideClick = this.noCancelOnOutsideClick;
+        this.__prevNoCancelOnEscKey = this.noCancelOnEscKey;
+        this.__prevWithBackdrop = this.withBackdrop;
+        this.noCancelOnOutsideClick = true;
+        this.noCancelOnEscKey = true;
+        this.withBackdrop = true;
+      } else {
+        // If the value was changed to false, let it false.
+        this.noCancelOnOutsideClick = this.noCancelOnOutsideClick &&
+          this.__prevNoCancelOnOutsideClick;
+        this.noCancelOnEscKey = this.noCancelOnEscKey &&
+          this.__prevNoCancelOnEscKey;
+        this.withBackdrop = this.withBackdrop && this.__prevWithBackdrop;
+      }
+    },
+
+    _updateClosingReasonConfirmed: function(confirmed) {
+      this.closingReason = this.closingReason || {};
+      this.closingReason.confirmed = confirmed;
+    },
+
+    /**
+     * Will dismiss the dialog if user clicked on an element with dialog-dismiss
+     * or dialog-confirm attribute.
+     */
+    _onDialogClick: function(event) {
+      // Search for the element with dialog-confirm or dialog-dismiss,
+      // from the root target until this (excluded).
+      var path = Polymer.dom(event).path;
+      for (var i = 0; i < path.indexOf(this); i++) {
+        var target = path[i];
+        if (target.hasAttribute && (target.hasAttribute('dialog-dismiss') || target.hasAttribute('dialog-confirm'))) {
+          this._updateClosingReasonConfirmed(target.hasAttribute('dialog-confirm'));
+          this.close();
+          event.stopPropagation();
+          break;
+        }
+      }
+    }
+
+  };
+
+  /** @polymerBehavior */
+  Polymer.PaperDialogBehavior = [Polymer.IronOverlayBehavior, Polymer.PaperDialogBehaviorImpl];
+
+</script><!--
+@license
+Copyright (c) 2015 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+<!--
+@license
+Copyright (c) 2015 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+--><!--
+### Styling
+
+The following custom properties and mixins are available for styling.
+
+Custom property | Description | Default
+----------------|-------------|----------
+`--paper-dialog-background-color` | Dialog background color                     | `--primary-background-color`
+`--paper-dialog-color`            | Dialog foreground color                     | `--primary-text-color`
+`--paper-dialog`                  | Mixin applied to the dialog                 | `{}`
+`--paper-dialog-title`            | Mixin applied to the title (`<h2>`) element | `{}`
+`--paper-dialog-button-color`     | Button area foreground color                | `--default-primary-color`
+-->
+
+<dom-module id="paper-dialog-shared-styles" assetpath="bower_components/paper-dialog-behavior/">
+  <template>
+    <style>
+      :host {
+        display: block;
+        margin: 24px 40px;
+
+        background: var(--paper-dialog-background-color, --primary-background-color);
+        color: var(--paper-dialog-color, --primary-text-color);
+
+        @apply(--paper-font-body1);
+        @apply(--shadow-elevation-16dp);
+        @apply(--paper-dialog);
+      }
+
+      :host > ::content > * {
+        margin-top: 20px;
+        padding: 0 24px;
+      }
+
+      :host > ::content > .no-padding {
+        padding: 0;
+      }
+
+      :host > ::content > *:first-child {
+        margin-top: 24px;
+      }
+
+      :host > ::content > *:last-child {
+        margin-bottom: 24px;
+      }
+
+      :host > ::content h2 {
+        position: relative;
+        margin: 0;
+        @apply(--paper-font-title);
+
+        @apply(--paper-dialog-title);
+      }
+
+      :host > ::content .buttons {
+        position: relative;
+        padding: 8px 8px 8px 24px;
+        margin: 0;
+
+        color: var(--paper-dialog-button-color, --primary-color);
+
+        @apply(--layout-horizontal);
+        @apply(--layout-end-justified);
+      }
+    </style>
+  </template>
+</dom-module>
+<!--
+@license
+Copyright (c) 2015 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+--><!--
+Material design: [Dialogs](https://www.google.com/design/spec/components/dialogs.html)
+
+`<paper-dialog>` is a dialog with Material Design styling and optional animations when it is
+opened or closed. It provides styles for a header, content area, and an action area for buttons.
+You can use the `<paper-dialog-scrollable>` element (in its own repository) if you need a scrolling
+content area. To autofocus a specific child element after opening the dialog, give it the `autofocus`
+attribute. See `Polymer.PaperDialogBehavior` and `Polymer.IronOverlayBehavior` for specifics.
+
+For example, the following code implements a dialog with a header, scrolling content area and
+buttons. Focus will be given to the `dialog-confirm` button when the dialog is opened.
+
+    <paper-dialog>
+      <h2>Header</h2>
+      <paper-dialog-scrollable>
+        Lorem ipsum...
+      </paper-dialog-scrollable>
+      <div class="buttons">
+        <paper-button dialog-dismiss>Cancel</paper-button>
+        <paper-button dialog-confirm autofocus>Accept</paper-button>
+      </div>
+    </paper-dialog>
+
+### Styling
+
+See the docs for `Polymer.PaperDialogBehavior` for the custom properties available for styling
+this element.
+
+### Animations
+
+Set the `entry-animation` and/or `exit-animation` attributes to add an animation when the dialog
+is opened or closed. See the documentation in
+[PolymerElements/neon-animation](https://github.com/PolymerElements/neon-animation) for more info.
+
+For example:
+
+    <link rel="import" href="components/neon-animation/animations/scale-up-animation.html">
+    <link rel="import" href="components/neon-animation/animations/fade-out-animation.html">
+
+    <paper-dialog entry-animation="scale-up-animation"
+                  exit-animation="fade-out-animation">
+      <h2>Header</h2>
+      <div>Dialog body</div>
+    </paper-dialog>
+
+### Accessibility
+
+See the docs for `Polymer.PaperDialogBehavior` for accessibility features implemented by this
+element.
+
+@group Paper Elements
+@element paper-dialog
+@hero hero.svg
+@demo demo/index.html
+-->
+
+<dom-module id="paper-dialog" assetpath="bower_components/paper-dialog/">
+  <template>
+    <style include="paper-dialog-shared-styles"></style>
+    <content></content>
+  </template>
+</dom-module>
+
+<script>
+
+(function() {
+
+  Polymer({
+
+    is: 'paper-dialog',
+
+    behaviors: [
+      Polymer.PaperDialogBehavior,
+      Polymer.NeonAnimationRunnerBehavior
+    ],
+
+    listeners: {
+      'neon-animation-finish': '_onNeonAnimationFinish'
+    },
+
+    _renderOpened: function() {
+      this.cancelAnimation();
+      this.playAnimation('entry');
+    },
+
+    _renderClosed: function() {
+      this.cancelAnimation();
+      this.playAnimation('exit');
+    },
+
+    _onNeonAnimationFinish: function() {
+      if (this.opened) {
+        this._finishRenderOpened();
+      } else {
+        this._finishRenderClosed();
+      }
     }
 
   });
+
+})();
 
 </script>
 <iron-iconset-svg name="icons" size="24">
@@ -20080,6 +22163,35 @@ and instead put a div inside and style that.
 <g id="youtube-searched-for"><path d="M17.01 14h-.8l-.27-.27c.98-1.14 1.57-2.61 1.57-4.23 0-3.59-2.91-6.5-6.5-6.5s-6.5 3-6.5 6.5H2l3.84 4 4.16-4H6.51C6.51 7 8.53 5 11.01 5s4.5 2.01 4.5 4.5c0 2.48-2.02 4.5-4.5 4.5-.65 0-1.26-.14-1.82-.38L7.71 15.1c.97.57 2.09.9 3.3.9 1.61 0 3.08-.59 4.22-1.57l.27.27v.79l5.01 4.99L22 19l-4.99-5z"></path></g>
 <g id="zoom-in"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14zm2.5-4h-2v2H9v-2H7V9h2V7h1v2h2v1z"></path></g>
 <g id="zoom-out"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14zM7 9h5v1H7z"></path></g>
+</defs></svg>
+</iron-iconset-svg>
+<iron-iconset-svg name="social" size="24">
+<svg><defs>
+<g id="cake"><path d="M12 6c1.11 0 2-.9 2-2 0-.38-.1-.73-.29-1.03L12 0l-1.71 2.97c-.19.3-.29.65-.29 1.03 0 1.1.9 2 2 2zm4.6 9.99l-1.07-1.07-1.08 1.07c-1.3 1.3-3.58 1.31-4.89 0l-1.07-1.07-1.09 1.07C6.75 16.64 5.88 17 4.96 17c-.73 0-1.4-.23-1.96-.61V21c0 .55.45 1 1 1h16c.55 0 1-.45 1-1v-4.61c-.56.38-1.23.61-1.96.61-.92 0-1.79-.36-2.44-1.01zM18 9h-5V7h-2v2H6c-1.66 0-3 1.34-3 3v1.54c0 1.08.88 1.96 1.96 1.96.52 0 1.02-.2 1.38-.57l2.14-2.13 2.13 2.13c.74.74 2.03.74 2.77 0l2.14-2.13 2.13 2.13c.37.37.86.57 1.38.57 1.08 0 1.96-.88 1.96-1.96V12C21 10.34 19.66 9 18 9z"></path></g>
+<g id="domain"><path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z"></path></g>
+<g id="group"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"></path></g>
+<g id="group-add"><path d="M8 10H5V7H3v3H0v2h3v3h2v-3h3v-2zm10 1c1.66 0 2.99-1.34 2.99-3S19.66 5 18 5c-.32 0-.63.05-.91.14.57.81.9 1.79.9 2.86s-.34 2.04-.9 2.86c.28.09.59.14.91.14zm-5 0c1.66 0 2.99-1.34 2.99-3S14.66 5 13 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm6.62 2.16c.83.73 1.38 1.66 1.38 2.84v2h3v-2c0-1.54-2.37-2.49-4.38-2.84zM13 13c-2 0-6 1-6 3v2h12v-2c0-2-4-3-6-3z"></path></g>
+<g id="location-city"><path d="M15 11V5l-3-3-3 3v2H3v14h18V11h-6zm-8 8H5v-2h2v2zm0-4H5v-2h2v2zm0-4H5V9h2v2zm6 8h-2v-2h2v2zm0-4h-2v-2h2v2zm0-4h-2V9h2v2zm0-4h-2V5h2v2zm6 12h-2v-2h2v2zm0-4h-2v-2h2v2z"></path></g>
+<g id="mood"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"></path></g>
+<g id="mood-bad"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 3c-2.33 0-4.31 1.46-5.11 3.5h10.22c-.8-2.04-2.78-3.5-5.11-3.5z"></path></g>
+<g id="notifications"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"></path></g>
+<g id="notifications-active"><path d="M7.58 4.08L6.15 2.65C3.75 4.48 2.17 7.3 2.03 10.5h2c.15-2.65 1.51-4.97 3.55-6.42zm12.39 6.42h2c-.15-3.2-1.73-6.02-4.12-7.85l-1.42 1.43c2.02 1.45 3.39 3.77 3.54 6.42zM18 11c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2v-5zm-6 11c.14 0 .27-.01.4-.04.65-.14 1.18-.58 1.44-1.18.1-.24.15-.5.15-.78h-4c.01 1.1.9 2 2.01 2z"></path></g>
+<g id="notifications-none"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z"></path></g>
+<g id="notifications-off"><path d="M20 18.69L7.84 6.14 5.27 3.49 4 4.76l2.8 2.8v.01c-.52.99-.8 2.16-.8 3.42v5l-2 2v1h13.73l2 2L21 19.72l-1-1.03zM12 22c1.11 0 2-.89 2-2h-4c0 1.11.89 2 2 2zm6-7.32V11c0-3.08-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68c-.15.03-.29.08-.42.12-.1.03-.2.07-.3.11h-.01c-.01 0-.01 0-.02.01-.23.09-.46.2-.68.31 0 0-.01 0-.01.01L18 14.68z"></path></g>
+<g id="notifications-paused"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.93 6 11v5l-2 2v1h16v-1l-2-2zm-3.5-6.2l-2.8 3.4h2.8V15h-5v-1.8l2.8-3.4H9.5V8h5v1.8z"></path></g>
+<g id="pages"><path d="M3 5v6h5L7 7l4 1V3H5c-1.1 0-2 .9-2 2zm5 8H3v6c0 1.1.9 2 2 2h6v-5l-4 1 1-4zm9 4l-4-1v5h6c1.1 0 2-.9 2-2v-6h-5l1 4zm2-14h-6v5l4-1-1 4h5V5c0-1.1-.9-2-2-2z"></path></g>
+<g id="party-mode"><path d="M20 4h-3.17L15 2H9L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-8 3c1.63 0 3.06.79 3.98 2H12c-1.66 0-3 1.34-3 3 0 .35.07.69.18 1H7.1c-.06-.32-.1-.66-.1-1 0-2.76 2.24-5 5-5zm0 10c-1.63 0-3.06-.79-3.98-2H12c1.66 0 3-1.34 3-3 0-.35-.07-.69-.18-1h2.08c.07.32.1.66.1 1 0 2.76-2.24 5-5 5z"></path></g>
+<g id="people"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"></path></g>
+<g id="people-outline"><path d="M16.5 13c-1.2 0-3.07.34-4.5 1-1.43-.67-3.3-1-4.5-1C5.33 13 1 14.08 1 16.25V19h22v-2.75c0-2.17-4.33-3.25-6.5-3.25zm-4 4.5h-10v-1.25c0-.54 2.56-1.75 5-1.75s5 1.21 5 1.75v1.25zm9 0H14v-1.25c0-.46-.2-.86-.52-1.22.88-.3 1.96-.53 3.02-.53 2.44 0 5 1.21 5 1.75v1.25zM7.5 12c1.93 0 3.5-1.57 3.5-3.5S9.43 5 7.5 5 4 6.57 4 8.5 5.57 12 7.5 12zm0-5.5c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2zm9 5.5c1.93 0 3.5-1.57 3.5-3.5S18.43 5 16.5 5 13 6.57 13 8.5s1.57 3.5 3.5 3.5zm0-5.5c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2z"></path></g>
+<g id="person"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"></path></g>
+<g id="person-add"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"></path></g>
+<g id="person-outline"><path d="M12 5.9c1.16 0 2.1.94 2.1 2.1s-.94 2.1-2.1 2.1S9.9 9.16 9.9 8s.94-2.1 2.1-2.1m0 9c2.97 0 6.1 1.46 6.1 2.1v1.1H5.9V17c0-.64 3.13-2.1 6.1-2.1M12 4C9.79 4 8 5.79 8 8s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 9c-2.67 0-8 1.34-8 4v3h16v-3c0-2.66-5.33-4-8-4z"></path></g>
+<g id="plus-one"><path d="M10 8H8v4H4v2h4v4h2v-4h4v-2h-4zm4.5-1.92V7.9l2.5-.5V18h2V5z"></path></g>
+<g id="poll"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"></path></g>
+<g id="public"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"></path></g>
+<g id="school"><path d="M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3L1 9l11 6 9-4.91V17h2V9L12 3z"></path></g>
+<g id="share"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"></path></g>
+<g id="whatshot"><path d="M13.5.67s.74 2.65.74 4.8c0 2.06-1.35 3.73-3.41 3.73-2.07 0-3.63-1.67-3.63-3.73l.03-.36C5.21 7.51 4 10.62 4 14c0 4.42 3.58 8 8 8s8-3.58 8-8C20 8.61 17.41 3.8 13.5.67zM11.71 19c-1.78 0-3.22-1.4-3.22-3.14 0-1.62 1.05-2.76 2.81-3.12 1.77-.36 3.6-1.21 4.62-2.58.39 1.29.59 2.65.59 4.04 0 2.65-2.15 4.8-4.8 4.8z"></path></g>
 </defs></svg>
 </iron-iconset-svg>
 <!--
@@ -21589,7 +23701,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 			<div style="display:flex;">
 				<paper-input type="number" style="width: 80px;padding-top: 0px; margin-top:0px;" on-change="cambiar_renglon" value="{{item.unds}}" no-label-float=""></paper-input>
 				<small class="precio" style="margin-left:15px;">Precio: {{item.prc}}</small>
-				<paper-fab mini="" id="{{item.id}}" icon="close" on-click="borrar" style="margin-left:15px;"></paper-fab>
+				<iron-icon mini="" id="{{item.id}}" icon="cancel" on-click="borrar" style="margin-left:15px;color:red;"></iron-icon>
 			</div>
 		  </div>
 		</template>
@@ -21695,7 +23807,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		<div style="display:flex">
 			<iron-a11y-keys id="a11y" target="[[target]]" keys="enter" on-keys-pressed="filter"></iron-a11y-keys>
 			<paper-input id="prod_src" label="Producto" no-label-float=""></paper-input>
-			<iron-icon icon="search" on-click="filter"></iron-icon>
+			<iron-icon icon="find-in-page" on-click="filter"></iron-icon>
 			<!--<paper-button mini id="loc-button" on-click="change_loc">{{loc}}</paper-button>-->
 			<!--<paper-fab mini id="find-button" icon="arrow-forward" style="margin-left:7px;" on-click="filter"></paper-fab>-->
 			<strong id="tot" style="margin-left:15px;margin-top:10px;">{{filtered_data.length}} prods</strong>
@@ -21732,7 +23844,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 				this.msg = 'Cantidad Productos: '+this.productos.length
 				this.filtered_data = []
 			},
-			pedir_renglon: function(e, detail) {
+			pedir_renglon: function(e) {
 				//alert("exito")
 				var renglon = {
 					id: e.target.domHost.id,
@@ -21779,7 +23891,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 					return false
 			},
 			get_productos: function() {
-				this.$.ajax.url = 'http://e0c4cfea.ngrok.io/proddata'
+				//this.$.ajax.url = 'http://e0c4cfea.ngrok.io/proddata'
+				this.$.ajax.url = 'http://localhost:3000/proddata'
 				this.$.ajax.contentType="application/json"
 				this.$.ajax.body = {"my_key": "v3nt4m0v1l.123"}
 				this.msg = 'Cargando...'
@@ -21821,14 +23934,14 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 			}
 		</style>
 		<iron-ajax id="ajax" method="POST" handle-as="json" on-response="load_data" on-error="ajax_error"></iron-ajax>
-		<h4 style="margin: 25px 0px 0px 15px;"><iron-icon icon="chevron-right"></iron-icon>Cliente</h4>
-		<paper-input id="clte" value="{{cliente.nombre}}" placeholder="Seleccione un cliente..." no-label-float="" style="width: 300px;" readonly=""></paper-input>
+		<h3 style="margin: 25px 0px 0px 15px;"><iron-icon icon="social:person" style="color:purple;margin-right:5px;"></iron-icon>Cliente</h3>
+		<paper-input id="clte" value="[[cliente.nombre]]" placeholder="Seleccione un cliente..." no-label-float="" style="width: 300px;" readonly=""></paper-input>
 		<!--<input is="iron-input" value={{cliente.nombre}} style="width: 300px;" readonly></input>-->
 		<div style="display: flex">
-		   <paper-input id="disponible" value="{{cliente.disponible}}" label="Saldo Disponible" style="width: 120px;" readonly=""></paper-input>
-		   <paper-input id="dcto" value="{{cliente.dcto_txt}}" label="Dcto Comercial" style="width: 90px; padding-left:15px;" readonly=""></paper-input>
+		   <paper-input id="disponible" value="[[cliente.disponible]]" label="Saldo Disponible" style="width: 120px;" readonly=""></paper-input>
+		   <paper-input id="dcto" value="[[cliente.dcto_txt]]" label="Dcto Comercial" style="width: 90px; padding-left:15px;" readonly=""></paper-input>
 		</div>
-		<h4 style="margin: 25px 15px 5px 15px;"><iron-icon icon="chevron-right"></iron-icon>Pedido</h4>
+		<h3 style="margin: 25px 15px 5px 15px;color:#00695C;"><iron-icon icon="shopping-basket" style="color:#00695C;margin-right:5px;"></iron-icon>Pedido</h3>
 		<div style="display: flex">
 		   <paper-input id="sku" value="{{pedido.skus}}" label="Productos" style="width: 60px;" readonly=""></paper-input>
 		   <paper-input id="unds" value="{{pedido.unds}}" label="Unidades" style="width: 70px; padding-left:7px;" readonly=""></paper-input>
@@ -21856,11 +23969,16 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 			this.app_pedido = document.getElementById('app_pedido')
 			this.cliente = {
 				id: 100,
-				nombre: "FARMACIA LA REDOMA CATIA LA MAR 2006, C.A.".toLowerCase(),
-				disponible: 19500,
-				dcto: 11.3,
-				dcto_txt: '11.3 %'
+				nombre: "Seleccione un Cliente...",
+				disponible: 0,
+				//dcto_cial: 0,
+				dcto_txt: ' %'
 			}
+		},
+		set_cliente: function(cliente) {
+			cliente.disponible = cliente.credito - cliente.saldo 
+			cliente.dcto_txt = cliente.dcto_cial+' %'
+			this.cliente = cliente
 		},
 		total_pedido: function(total) {
 			this.pedido = total
@@ -21908,16 +24026,117 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 	
 	<dom-module id="tab-clientes" assetpath="src/">
 	  <template>
-		<paper-fab id="sync_cltes" mini="" green="" icon="autorenew" elevation="3" z-index="10" style="margin-left: 260px;margin-top:7px;"></paper-fab>
+		<iron-ajax id="ajax" method="POST" handle-as="json" on-response="load_data" on-error="ajax_error"></iron-ajax>
+		<paper-fab on-click="get_clientes" mini="" green="" icon="autorenew" elevation="3" z-index="10" style="margin-left: 260px;margin-top:7px;"></paper-fab>
 
+		<div>{{msg}}</div>
+		<div style="display:flex">
+			<iron-a11y-keys id="a11y" target="[[target]]" keys="enter" on-keys-pressed="filter"></iron-a11y-keys>
+			<paper-input id="clte_src" label="Cliente" style="width:7em;margin-left:7px;" no-label-float=""></paper-input>
+			<iron-icon icon="search" style="color:chocolate;" on-click="filter"></iron-icon>
+			<!--<paper-button mini id="loc-button" on-click="change_loc">{{loc}}</paper-button>-->
+			<strong id="tot" style="margin-left:15px;margin-top:10px;">{{filtered_data.length}} cltes</strong>
+		</div>
+		<paper-dialog id="clte_menu" style="width:180px;"> 
+		<!--<paper-menu>-->
+			<div on-click="crear_pedido" style="min-height:20px;line-height:35px;">
+				<iron-icon icon="shopping-basket" style="color:Maroon;"></iron-icon>
+				<span style="margin-left:5px;">Nuevo Pedido</span>
+			</div>
+			<!--<div on-click="pedidos" style="min-height:20px;line-height:35px;">Pedidos Pendientes</paper-item>-->
+			<div on-click="info_cliente" style="min-height:20px;line-height:35px;">
+				<iron-icon icon="info-outline" style="color:ForestGreen;"></iron-icon>
+				<span style="margin-left:5px;">Info Cliente</span>
+			</div>
+		<!--</paper-menu>-->
+		</paper-dialog>
+		<template id="mytemplate" is="dom-repeat" items="{{filtered_data}}">
+		  <div class="card">
+			<strong class="desc">[[item.nombre]]</strong>
+			<div style="display:flex; justify-content:space-between">
+				<strong class="existencia">[[item.ciudad]]</strong>
+				<small class="precio" valor="[[item.saldo]]" style="margin-left:20px;">Saldo: [[item.saldo]]</small> 
+				<iron-icon id="{{item.id}}" icon="more-vert" on-click="open_clte_menu" style="color:chocolate;"></iron-icon>
+			</div>
+		  </div>
+		</template>
 	  </template>
 	  <script>
 		Polymer({
 
-		is: 'tab-clientes'
+		is: 'tab-clientes',
+		ready: function() {
+			this.app_pedido = document.getElementById('app_pedido')
+			if (localStorage.getItem("cltes_data") === null)
+				this.clientes = []
+			 else
+			    this.clientes = JSON.parse(localStorage.getItem("cltes_data"))
+			this.msg = 'Cantidad Clientes: '+this.clientes.length
+			this.filtered_data = []
+		},
+		filter: function() {
+			this.filtered_data=[]
+			this.$.mytemplate.render()
+			var filtered_d = []
+			for (i=0; i<this.clientes.length; i++)
+				if (this.clientes[i].nombre.toLowerCase().indexOf(this.$.clte_src.value.toLowerCase()) > -1)
+					filtered_d.push(this.clientes[i])
+			/** Load Pedido Info **/
+			this.filtered_data = filtered_d
+			filtered_d = []	
+		},
+		get_clientes: function() {
+			this.$.ajax.url = 'https://api.myjson.com/bins/w3lb'
+			this.$.ajax.method = 'GET'
+			//this.$.ajax.url = 'http://localhost:3000/clientes/zona/16'
+			this.$.ajax.contentType="application/json"
+			/**this.$.ajax.body = {"my_key": "v3nt4m0v1l.123"}**/
+			this.msg = 'Cargando...'
+			this.$.ajax.generateRequest()
+		},
+		crear_pedido: function() {
+			this.$.clte_menu.close()
+			this.app_pedido.crear_pedido(this.cliente)
+		},
+		info_cliente: function() {
+			this.$.clte_menu.close()
+			alert('info cliente')
+		},
+		open_clte_menu: function(e) {
+			var id = Number(e.target.id)
+			for (var i=0; i < this.filtered_data.length; i++)
+				if (id == this.filtered_data[i].id)
+				{
+					this.cliente = this.filtered_data[i]
+					i = this.filtered_data.length
+				}
+			console.log(this.cliente)
+			//this.$.clte_menu.style.top = e.target.offsetTop+"px"
+			this.$.clte_menu.toggle()
+		},
+		load_data: function() {	
+			console.log(this.$.ajax.lastResponse)
+			if (this.$.ajax.lastResponse.err)
+			{
+				this.msg = this.$.ajax.lastResponse.err
+				console.log(this.$.ajax.lastResponse.err)
+			}
+			else
+			{
+				localStorage["cltes_data"] = JSON.stringify(this.$.ajax.lastResponse)
+				this.clientes = JSON.parse(localStorage["cltes_data"])
+				this.msg = 'Cargados '+this.$.ajax.lastResponse.length+' Clientes'
+			}
+		},
+		ajax_error: function() {
+			console.log(this.$.ajax.lastError)
+			//alert("<%= lng('Error Processing Request: ')%>", this.$.ajax.lastError)
+			this.msg = 'Error Cargando Clientes'
+			//alert(this.msg)
+		}
 		})
 	  </script>
-	</dom-module>
+	</dom-module>--&gt;
 	
 	<!--*** MAIN ***-->
 	<!--************-->
@@ -21931,7 +24150,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 			<!--<app-menu style="margin-left: 0px;"></app-menu>-->
 		</app-toolbar>
 		<div class="menu_item" on-click="crear_pedido">
-			<iron-icon icon="shopping-cart" item-icon=""></iron-icon>
+			<iron-icon icon="shopping-cart" style="color:#FF6D00;" item-icon=""></iron-icon>
 			Crear Pedido
 		</div>
 		<div class="menu_item" on-click="pedidos_pendientes">
@@ -21947,7 +24166,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 			Clientes
 		</div>
 		<div class="menu_item" on-click="acerca_de">
-			<iron-icon icon="stars" item-icon=""></iron-icon>
+			<iron-icon icon="perm-device-information" item-icon=""></iron-icon>
 			Acerca de
 		</div>
       </app-drawer>
@@ -21964,9 +24183,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 				<!--<iron-icon icon="" on-click="full" style="color: white;" size=32></iron-icon>-->
 			</div>
 			<paper-tabs id="tabs" bottom-item="" selected="0" <!--class="bottom self-end" --=""> &gt;
-				<paper-tab on-click="view1">Ped</paper-tab>
-				<paper-tab on-click="view2">Prods</paper-tab>
-				<paper-tab on-click="view3">Reng</paper-tab>
+				<paper-tab on-click="view1"><iron-icon icon="shopping-basket" style="color:white;" item-icon=""></iron-icon></paper-tab>
+				<paper-tab on-click="view2"><iron-icon icon="loyalty" style="color:white;" item-icon=""></iron-icon></paper-tab>
+				<paper-tab on-click="view3"><iron-icon icon="assignment" style="color:white;" item-icon=""></iron-icon></paper-tab>
 			</paper-tabs>
 			
           </app-toolbar>
@@ -22064,7 +24283,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		el.webkitRequestFullScreen()
 
 	  },
-	  crear_pedido: function() {
+	  crear_pedido: function(cliente) {
+		this.cliente = cliente
+		this.$.view1.set_cliente(this.cliente)
 		this.$.tabs.removeAttribute("hide");
 		this.$.tabs.selected = 0
 		this.view1()		
