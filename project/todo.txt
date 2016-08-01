@@ -6,4 +6,6 @@ mostrar cantidad pedida por producto (tab-producto)
  - Borrar renglon (en tab-prods, tab-renglones)
  - iconos
  - código redundante para cambiar renglon en vista2 y vista3
-  - al iniciar, tab-renglones en blanco y tab-pedido con totales en blanco
+ - al iniciar, tab-renglones en blanco y tab-pedido con totales en blanco
+ 
+ 
