@@ -438,6 +438,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 	
 	<dom-module id="tab-clientes">
 	  <template>
+		<style>
+			background-color: gainsboro;
+		</style>
 		<iron-ajax id="ajax" method='POST' handle-as="json" on-response="load_data" on-error="ajax_error"></iron-ajax>
 		<paper-fab on-click="get_clientes" mini green icon="autorenew" elevation=3 z-index=10 style="margin-left: 260px;margin-top:7px;"></paper-fab>
 
@@ -556,31 +559,36 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     <app-drawer-layout id="my_app" fullbleed>
 
       <!-- Drawer content -->
-      <app-drawer id="menu">
+      <app-drawer id="menu" style="--app-drawer-scrim-background:gainsboro">
         <app-toolbar style="background-color: #009688;color:white;height: 120px;">
 			<div bottom-item style="margin-left: 70px;margin-bottom: 5px;">Farvenca Móvil</div>
 			<!--<app-menu style="margin-left: 0px;"></app-menu>-->
 		</app-toolbar>
 		<div class="menu_item" on-click="crear_pedido">
-			<iron-icon icon="shopping-cart" style="color:#FF6D00;" item-icon></iron-icon>
+			<iron-icon icon="shopping-cart" style="color:#68c122;" item-icon></iron-icon>
 			Crear Pedido
 		</div>
+		<hr>
 		<div class="menu_item" on-click="pedidos_pendientes">
-			<iron-icon icon="assignment" item-icon></iron-icon>
+			<iron-icon icon="assignment" style="color:#283593;" item-icon></iron-icon>
 			Pedidos Pendientes
 		</div>
+		<hr>
 		<div class="menu_item" on-click="productos">
-			<iron-icon icon="loyalty" item-icon></iron-icon>
+			<iron-icon icon="loyalty" style="color:#EC407A;" item-icon></iron-icon>
 			Productos
 		</div>
+		<hr>
 		<div class="menu_item" on-click="clientes">
-			<iron-icon icon="face" item-icon></iron-icon>
+			<iron-icon icon="social:person" style="color:#AB47BC;" item-icon></iron-icon>
 			Clientes
 		</div>
+		<hr>
 		<div class="menu_item" on-click="acerca_de">
-			<iron-icon icon="perm-device-information" item-icon></iron-icon>
+			<iron-icon icon="perm-device-information" style="color:#1E88E5;" item-icon></iron-icon>
 			Acerca de
 		</div>
+		<hr>
       </app-drawer>
 
       <!-- Main content -->
