@@ -1,14 +1,14 @@
+*** MOVIL
+
 - calcular descuento comercial del pedido, por renglon
 
 mostrar cantidad pedida por producto (tab-producto)
 
  - Modificar renglon (traer cantidad pedida)
- - Borrar renglon (en tab-prods, tab-renglones)
- - iconos
  - código redundante para cambiar renglon en vista2 y vista3
  - al iniciar, tab-renglones en blanco y tab-pedido con totales en blanco
  
-  - Validar cliente antes de enviar pedido
+  - Validar cliente antes de enviar pedido (listo)
  - round total monto
  - al enviar, preguntar ¿ Limpiar Pedido ?
  - Guardar pedidos pendientes
