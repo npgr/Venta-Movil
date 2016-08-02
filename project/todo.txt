@@ -8,4 +8,10 @@ mostrar cantidad pedida por producto (tab-producto)
  - código redundante para cambiar renglon en vista2 y vista3
  - al iniciar, tab-renglones en blanco y tab-pedido con totales en blanco
  
- 
+  - Validar cliente antes de enviar pedido
+ - round total monto
+ - al enviar, preguntar ¿ Limpiar Pedido ?
+ - Guardar pedidos pendientes
+ - Consultar Pedidos Pendientes
+ - Acerca de
+ - Ordenar renglones alfabeticamente (Server)

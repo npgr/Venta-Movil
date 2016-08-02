@@ -101,7 +101,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 	
 	<dom-module id="tab-renglones">
 	  <template>
-		<div style="display: flex">
+		<div style="display: flex;justify-content:center;">
 		   <paper-input id="sku" value=[[pedido.skus]] label="Productos" style="width: 60px;" readonly></paper-input>
 		   <paper-input id="unds" value=[[pedido.unds]] label="Unidades" style="width: 70px; padding-left:7px;" readonly></paper-input>
 			<paper-input id="mto" value=[[pedido.mto]] label="Total Monto" style="width: 125px; padding-left:7px;" readonly></paper-input>
@@ -110,14 +110,13 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		 <div class="card">
 			<strong class="desc">{{item.prd}}</strong>
 			<br>
-			<div style="display:flex;">
+			<div style="display:flex;justify-content:space-between">
 				<paper-input type="number" style="width: 80px;padding-top: 0px; margin-top:0px;" on-change="cambiar_renglon" value={{item.unds}} no-label-float></paper-input>
 				<small class="precio" style="margin-left:15px;">Precio: {{item.prc}}</small>
-				<iron-icon mini id="{{item.id}}" icon="cancel" on-click="borrar" style="margin-left:15px;color:red;"></iron-icon>
+				<paper-icon-button  id="[[item.id]]" name="[[item.prd]]" icon="cancel" on-click="borrar" style="margin-left:15px;color:red;"></paper-icon-button>
 			</div>
 		  </div>
 		</template>
-		[[renglones_txt]]
 	  </template>
 	  <script>
 		Polymer({
@@ -139,23 +138,28 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 				
 				this.renglones = pedido /** clone array */
 				this.pedido = this.app_pedido.total_pedido()
-				
-				this.renglones_txt = JSON.stringify(this.renglones)
+				//console.log(this.renglones)
+				//this.renglones_txt = JSON.stringify(this.renglones)
 			},
 			borrar: function(e) {
-				var id = e.target.id
-				for (var i=0; i<this.renglones.length; i++)
-				{
-					if (this.renglones[i].id == id)
+				//var arr = e.target.domHost.id.split('___')
+				var name = e.target.domHost.name
+				var r = confirm("Borrar "+name+" ?");
+				if (r == true) {
+					var id = e.target.domHost.id
+					for (var i=0; i<this.renglones.length; i++)
 					{
-						this.renglones.splice(i,1)
-						i = this.renglones.length
+						if (this.renglones[i].id == id)
+						{
+							this.renglones.splice(i,1)
+							i = this.renglones.length
+						}
 					}
+					//this.renglones_txt = JSON.stringify(this.renglones)
+					this.$.mytemplate2.render()
+					this.app_pedido.set_pedido(this.renglones)
+					this.pedido = this.app_pedido.total_pedido()
 				}
-				this.renglones_txt = JSON.stringify(this.renglones)
-				this.$.mytemplate2.render()
-				this.app_pedido.set_pedido(this.renglones)
-				this.pedido = this.app_pedido.total_pedido()
 			},
 			cambiar_renglon: function() {
 				for (var i=0; i<this.renglones.length; i++)
@@ -166,7 +170,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 							this.renglones.splice(i, 1)
 						i = this.renglones.length
 					}
-				this.renglones_txt = JSON.stringify(this.renglones)
+				//this.renglones_txt = JSON.stringify(this.renglones)
 				this.app_pedido.set_pedido(this.renglones)
 				this.pedido = this.app_pedido.total_pedido()
 			}
@@ -219,7 +223,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		<div style="display:flex">
 			<iron-a11y-keys id="a11y" target="[[target]]" keys="enter" on-keys-pressed="filter"></iron-a11y-keys>
 			<paper-input id="prod_src" label="Producto" no-label-float></paper-input>
-			<iron-icon icon="find-in-page" on-click="filter"></iron-icon>
+			<paper-icon-button icon="search" on-click="filter" style="color:chocolate;"></paper-icon-button>
 			<!--<paper-button mini id="loc-button" on-click="change_loc">{{loc}}</paper-button>-->
 			<!--<paper-fab mini id="find-button" icon="arrow-forward" style="margin-left:7px;" on-click="filter"></paper-fab>-->
 			<strong id="tot" style="margin-left:15px;margin-top:10px;">{{filtered_data.length}} prods</strong>
@@ -253,7 +257,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 					this.productos = []
 				 else
 				    this.productos = JSON.parse(localStorage.getItem("prod_data"))
-				this.msg = 'Cantidad Productos: '+this.productos.length
+				this.msg = 'Productos: '+this.productos.length
 				this.filtered_data = []
 			},
 			pedir_renglon: function(e) {
@@ -346,23 +350,25 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 			}
 		</style>
 		<iron-ajax id="ajax" method='POST' handle-as="json" on-response="load_data" on-error="ajax_error"></iron-ajax>
-		<h3 style="margin: 25px 0px 0px 15px;"><iron-icon icon="social:person" style="color:purple;margin-right:5px;"></iron-icon>Cliente</h3>
-		<paper-input id="clte" value=[[cliente.nombre]] placeholder="Seleccione un cliente..." no-label-float style="width: 300px;" readonly></paper-input>
-		<!--<input is="iron-input" value={{cliente.nombre}} style="width: 300px;" readonly></input>-->
-		<div style="display: flex">
-		   <paper-input id="disponible" value=[[cliente.disponible]] label="Saldo Disponible" style="width: 120px;" readonly></paper-input>
-		   <paper-input id="dcto" value=[[cliente.dcto_txt]] label="Dcto Comercial" style="width: 90px; padding-left:15px;" readonly></paper-input>
+		<h3 style="margin: 25px 0px 0px 15px;"><iron-icon icon="social:person" style="color:purple;margin-right:10px;"></iron-icon>Cliente</h3>
+		<div style="display: flex;justify-content:center;">
+			<paper-input id="clte" value=[[cliente.nombre]] placeholder="Seleccione un cliente..." no-label-float style="width: 300px;" readonly></paper-input>
 		</div>
-		<h3 style="margin: 25px 15px 5px 15px;color:#00695C;"><iron-icon icon="shopping-basket" style="color:#00695C;margin-right:5px;"></iron-icon>Pedido</h3>
-		<div style="display: flex">
-		   <paper-input id="sku" value={{pedido.skus}} label="Productos" style="width: 60px;" readonly></paper-input>
-		   <paper-input id="unds" value={{pedido.unds}} label="Unidades" style="width: 70px; padding-left:7px;" readonly></paper-input>
-			<paper-input id="mto" value={{pedido.mto}} label="Total Monto" style="width: 125px; padding-left:7px;" readonly></paper-input>
+		<!--<input is="iron-input" value={{cliente.nombre}} style="width: 300px;" readonly></input>-->
+		<div style="display: flex;justify-content:center;">
+		   <paper-input id="disponible" value=[[cliente.disponible]] label="Saldo Disponible" style="width: 120px;" readonly></paper-input>
+		   <paper-input id="dcto" value=[[cliente.dcto_txt]] label="Dcto Comercial" style="width: 90px; padding-left:25px;" readonly></paper-input>
+		</div>
+		<h3 style="margin: 25px 15px 0px 15px;"><iron-icon icon="shopping-basket" style="color:#00695C;margin-right:10px;"></iron-icon>Pedido</h3>
+		<div style="display: flex;justify-content:center;">
+		   <paper-input id="sku" value=[[pedido.skus]] label="Productos" style="width: 60px;" readonly></paper-input>
+		   <paper-input id="unds" value=[[pedido.unds]] label="Unidades" style="width: 70px; padding-left:7px;" readonly></paper-input>
+			<paper-input id="mto" value=[[pedido.mto]] label="Total Monto" style="width: 125px; padding-left:7px;" readonly></paper-input>
 		</div>
 		<br>
-		<div style="color:black;">
-			<paper-button style="margin-left:30px;" on-click="enviar_pedido"><iron-icon icon="arrow-upward" on-click="full" style="color: black;" size=32></iron-icon>Enviar</paper-button>
-			<paper-button style="margin-left:30px;" on-click="guardar_pedido"><iron-icon icon="arrow-downward" on-click="full" style="color: black;" size=32></iron-icon>Guardar</paper-button>
+		<div style="color:black;display: flex;justify-content:center;">
+			<paper-button style="padding-left:15px;padding-right:20px;height:35px;" on-click="enviar_pedido"><iron-icon icon="arrow-upward" on-click="full" style="color: black;" size=32></iron-icon>Enviar</paper-button>
+			<paper-button style="margin-left:20px;padding-left:15px;padding-right:20px;height:35px;" on-click="guardar_pedido"><iron-icon icon="arrow-downward" on-click="full" style="color: black;" size=32></iron-icon>Guardar</paper-button>
 		</div>
 		<h4 style="margin-left:30px;">{{msg}}</h4>
 	  </template>
@@ -412,7 +418,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 					renglones:  rng2
 				}
 			}
-			console.log(pedido)
+			console.log('Pedido',pedido)
 			this.$.ajax.body = pedido
 			this.msg = 'Enviando...'
 			this.$.ajax.generateRequest()
@@ -442,15 +448,15 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 			background-color: gainsboro;
 		</style>
 		<iron-ajax id="ajax" method='POST' handle-as="json" on-response="load_data" on-error="ajax_error"></iron-ajax>
-		<paper-fab on-click="get_clientes" mini green icon="autorenew" elevation=3 z-index=10 style="margin-left: 260px;margin-top:7px;"></paper-fab>
-
+		<iron-a11y-keys id="a11y" target="[[target]]" keys="enter" on-keys-pressed="filter"></iron-a11y-keys>
+		<paper-fab mini green icon="autorenew" elevation=3 z-index=10 on-click="get_clientes" style="position:absolute; left:263px; top:100px;"></paper-fab>
 		<div>{{msg}}</div>
-		<div style="display:flex">
-			<iron-a11y-keys id="a11y" target="[[target]]" keys="enter" on-keys-pressed="filter"></iron-a11y-keys>
+		<div style="display:flex;">
 			<paper-input id="clte_src" label="Cliente" style="width:7em;margin-left:7px;" no-label-float></paper-input>
-			<iron-icon icon="search" style="color:chocolate;" on-click="filter"></iron-icon>
+			<paper-icon-button icon="search" style="color:chocolate;" on-click="filter"></paper-icon-button>
 			<!--<paper-button mini id="loc-button" on-click="change_loc">{{loc}}</paper-button>-->
 			<strong id="tot" style="margin-left:15px;margin-top:10px;">{{filtered_data.length}} cltes</strong>
+			<!--<paper-fab on-click="get_clientes" mini green icon="autorenew" elevation=3></paper-fab>-->
 		</div>
 		<paper-dialog id="clte_menu" style="width:180px;"> 
 		<!--<paper-menu>-->
@@ -471,7 +477,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 			<div style="display:flex; justify-content:space-between">
 				<strong class="existencia">[[item.ciudad]]</strong>
 				<small class="precio" valor=[[item.saldo]] style="margin-left:20px;">Saldo: [[item.saldo]]</small> 
-				<iron-icon id="{{item.id}}" icon="more-vert" on-click="open_clte_menu" style="color:chocolate;"></iron-icon>
+				<paper-icon-button id="{{item.id}}" icon="more-vert" on-click="open_clte_menu" style="color:chocolate;"></paper-icon-button>
 			</div>
 		  </div>
 		</template>
@@ -486,7 +492,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 				this.clientes = []
 			 else
 			    this.clientes = JSON.parse(localStorage.getItem("cltes_data"))
-			this.msg = 'Cantidad Clientes: '+this.clientes.length
+			this.msg = 'Clientes: '+this.clientes.length
 			this.filtered_data = []
 		},
 		filter: function() {
@@ -518,19 +524,18 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 			alert('info cliente')
 		},
 		open_clte_menu: function(e) {
-			var id = Number(e.target.id)
+			var id = Number(e.target.domHost.id)
 			for (var i=0; i < this.filtered_data.length; i++)
 				if (id == this.filtered_data[i].id)
 				{
 					this.cliente = this.filtered_data[i]
 					i = this.filtered_data.length
 				}
-			console.log(this.cliente)
 			//this.$.clte_menu.style.top = e.target.offsetTop+"px"
 			this.$.clte_menu.toggle()
 		},
 		load_data: function() {	
-			console.log(this.$.ajax.lastResponse)
+			//console.log(this.$.ajax.lastResponse)
 			if (this.$.ajax.lastResponse.err)
 			{
 				this.msg = this.$.ajax.lastResponse.err
