@@ -9,6 +9,7 @@ mostrar cantidad pedida por producto (tab-producto)
  - al iniciar, tab-renglones en blanco y tab-pedido con totales en blanco
  
   - Validar cliente antes de enviar pedido (listo)
+  - Cuando se vuelve a view1, limpia el cliente
  - round total monto
  - al enviar, preguntar ¿ Limpiar Pedido ?
  - Guardar pedidos pendientes
