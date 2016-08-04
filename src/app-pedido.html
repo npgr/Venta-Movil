@@ -359,7 +359,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 			}
 		</style>
 		<iron-ajax id="ajax" method='POST' handle-as="json" on-response="load_data" on-error="ajax_error"></iron-ajax>
-		<h3 style="margin: 25px 0px 0px 15px;"><iron-icon icon="social:person" style="color:purple;margin-right:10px;"></iron-icon>Cliente</h3>
+		<h3 style="margin: 25px 0px 0px 15px;"><iron-icon icon="social:person" style="color:purple;margin-right:10px;"></iron-icon>
+		Cliente<iron-icon icon="search" on-click="clientes" style="color:chocolate"></iron-icon></h3>
 		<div style="display: flex;justify-content:center;">
 			<paper-input id="clte" value=[[cliente.nombre]] placeholder="Seleccione un cliente..." no-label-float style="width: 300px;" readonly></paper-input>
 		</div>
@@ -401,6 +402,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 				//dcto_cial: 0,
 				dcto_txt: ' %'
 			}
+		},
+		clientes: function() {
+			this.app_pedido.clientes()
 		},
 		set_cliente: function(cliente) {
 			cliente.disponible = cliente.credito - cliente.saldo 
@@ -600,7 +604,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 			Pedidos Pendientes
 		</div>
 		<hr>
-		<div class="menu_item" on-click="productos">
+		<div class="menu_item" on-click="view2_menu">
 			<iron-icon icon="loyalty" style="color:#EC407A;" item-icon></iron-icon>
 			Productos
 		</div>
@@ -744,7 +748,13 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		this.current_view = 'view1'
 		this.$[this.current_view].removeAttribute("hide");
 	  },
+	  view2_menu: function() {
+		this.$.tabs.removeAttribute("hide","")
+		this.$.menu.close()
+		this.view2()
+	  },
 	  view2: function() {
+		//console.log('view2')
 		this.$[this.current_view].setAttribute("hide","")
 		this.current_view = 'view2'
 		this.titulo = 'Productos'
