@@ -360,7 +360,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		</style>
 		<iron-ajax id="ajax" method='POST' handle-as="json" on-response="load_data" on-error="ajax_error"></iron-ajax>
 		<h3 style="margin: 25px 0px 0px 15px;"><iron-icon icon="social:person" style="color:purple;margin-right:10px;"></iron-icon>
-		Cliente<iron-icon icon="search" on-click="clientes" style="color:chocolate"></iron-icon></h3>
+			Cliente<iron-icon icon="search" on-click="clientes" style="margin-left:3px;color:chocolate"></iron-icon>
+		</h3>
 		<div style="display: flex;justify-content:center;">
 			<paper-input id="clte" value=[[cliente.nombre]] placeholder="Seleccione un cliente..." no-label-float style="width: 300px;" readonly></paper-input>
 		</div>
@@ -369,6 +370,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		   <paper-input id="disponible" value=[[cliente.disponible]] label="Saldo Disponible" style="width: 120px;" readonly></paper-input>
 		   <paper-input id="dcto" value=[[cliente.dcto_txt]] label="Dcto Comercial" style="width: 90px; padding-left:25px;" readonly></paper-input>
 		</div>
+		<div style="margin-left:40px;color:blue;"> Mas...</div>
 		<h3 style="margin: 25px 15px 0px 15px;"><iron-icon icon="shopping-basket" style="color:#00695C;margin-right:10px;"></iron-icon>Pedido</h3>
 		<div style="display: flex;justify-content:center;">
 		   <paper-input id="sku" value=[[pedido.skus]] label="Productos" style="width: 60px;" readonly></paper-input>
@@ -466,6 +468,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		</style>
 		<iron-ajax id="ajax" method='POST' handle-as="json" on-response="load_data" on-error="ajax_error"></iron-ajax>
 		<iron-a11y-keys id="a11y" target="[[target]]" keys="enter" on-keys-pressed="filter"></iron-a11y-keys>
+		<div style="display:flex;background-color:#9ccc66;height:5px;"></div>
 		<paper-fab mini orange icon="autorenew" elevation=3 z-index=10 on-click="get_clientes" style="position:absolute; left:263px; top:100px;"></paper-fab>
 		<div>{{msg}}</div>
 		<div style="display:flex;">
@@ -573,7 +576,52 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		}
 		})
 	  </script>
-	</dom-module>-->
+	</dom-module>
+	
+	<dom-module id="tab-pendientes">
+	  <template>
+		<!--<div style="display:flex;background-color:#33691e;height:35px;"></div>-->
+		<div style="display:flex;background-color:#9ccc66;height:5px;"></div>
+		
+		<!--<div style="display:flex;background-color:#33691e;height:35px;"></div>
+		<div style="display:flex;background-color:#9ccc66;height:5px;"></div>-->
+		<div>Pendientes</div>
+	  </template>
+	  <script>
+		Polymer({
+
+		is: 'tab-pendientes',
+		ready: function() {
+		
+		}
+		})
+	  </script>
+	</dom-module>
+	
+	<dom-module id="tab-acerca">
+	  <template>
+		<div style="display:flex;background-color:#9ccc66;height:5px;"></div>
+		
+		<div class="foto" style="display:flex;justify-content:center;">FOTO</div>
+		<br>
+		<!--<div>(icono) Farvenca Móvil</div>-->
+		<div class="logo" style="display:flex;justify-content:center;"></div>
+		<br>
+		<div style="display:flex;justify-content:center;">Versión 1.0.0</div>
+		<br>
+		<div style="display:flex;justify-content:center;">Copyright 2016 Drogueria Farvenca.</div>
+		<div style="display:flex;justify-content:center;">Todos los derechos reservados.</div>
+	  </template>
+	  <script>
+		Polymer({
+
+		is: 'tab-acerca',
+		ready: function() {
+		
+		}
+		})
+	  </script>
+	</dom-module>
 	
 	<!--*** MAIN ***-->
 	<!--************-->
@@ -599,7 +647,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 			Crear Pedido
 		</div>
 		<hr>
-		<div class="menu_item" on-click="pedidos_pendientes">
+		<div class="menu_item" on-click="pendientes">
 			<iron-icon icon="assignment" style="color:#283593;" item-icon></iron-icon>
 			Pedidos Pendientes
 		</div>
@@ -624,7 +672,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       <!-- Main content -->
       <app-header-layout has-scrolling-region>
 
-        <app-header condenses reveals effects="waterfall">
+        <app-header id="header" condenses reveals effects="waterfall">
           <app-toolbar style="height: 85px;background-color:#33691e">
 			<div top-item style="display: flex; justify-content: space-between; margin: 5px 15px;">
 				<paper-icon-button icon="menu" drawer-toggle></paper-icon-button>
@@ -637,15 +685,15 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 				<paper-tab on-click="view2"><iron-icon icon="loyalty" style="color:white;" item-icon></iron-icon></paper-tab>
 				<paper-tab on-click="view3"><iron-icon icon="assignment" style="color:white;" item-icon></iron-icon></paper-tab>
 			</paper-tabs>
-			
           </app-toolbar>
         </app-header>
 
 			<tab-pedido id='view1' hide></tab-pedido>
+			<tab-pendientes id='pendientes' hide></tab-pendientes>
 			<tab-prods id='view2'  hide></tab-prods>
 			<tab-renglones id='view3' hide></tab-renglones>
 			<tab-clientes id='view_clientes' hide></tab-clientes>
-			<!--<div id="view_clientes" hide> Clientes </div>-->
+			<tab-acerca id='acerca' hide></tab-acerca>
 
       </app-header-layout>
 
@@ -771,11 +819,27 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		this.current_view = 'view3'
 		this.$[this.current_view].removeAttribute("hide");
 	  },
+	  pendientes: function() {
+		this.titulo = 'Pedidos Pendientes'
+		this.$.tabs.setAttribute("hide","")
+		this.$[this.current_view].setAttribute("hide","")
+		this.current_view = 'pendientes'
+		this.$[this.current_view].removeAttribute("hide");
+		this.$.menu.close()
+	  },
 	  clientes: function() {
 		this.titulo = 'Clientes'
 		this.$.tabs.setAttribute("hide","")
 		this.$[this.current_view].setAttribute("hide","")
 		this.current_view = 'view_clientes'
+		this.$[this.current_view].removeAttribute("hide");
+		this.$.menu.close()
+	  },
+	  acerca_de: function() {
+		this.titulo = 'Farvenca Movil'
+		this.$.tabs.setAttribute("hide","")
+		this.$[this.current_view].setAttribute("hide","")
+		this.current_view = 'acerca'
 		this.$[this.current_view].removeAttribute("hide");
 		this.$.menu.close()
 	  }
