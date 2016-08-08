@@ -643,7 +643,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 			<div bottom-item style="margin-left: 70px;margin-bottom: 5px;">Farvenca Móvil</div>-->
 			<!--<app-menu style="margin-left: 0px;"></app-menu>-->
 		<!--</app-toolbar>-->
-		<div style="display:flex;background-color:#33691e;height:55px;"></div>
+		<div style="display:flex;background-color:#33691e;height:50px;"></div>
 		<div style="display:flex;background-color:#9ccc66;height:5px;"></div>
 		
 		<!--<div style="display:flex;background-color:#33691e;height:35px;"></div>
@@ -671,12 +671,29 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 			Clientes
 		</div>
 		<hr>
+		<div class="menu_item" on-click="configuracion">
+			<iron-icon icon="settings" style="color:#F57C00;" item-icon></iron-icon>
+			Configuración
+		</div>
+		<hr>
 		<div class="menu_item" on-click="acerca_de">
 			<iron-icon icon="perm-device-information" style="color:#1E88E5;" item-icon></iron-icon>
 			Acerca de
 		</div>
 		<hr>
       </app-drawer>
+	  
+	  <paper-dialog id="app_settings" modal=true style="width:250px;border-radius:5px;"> 
+		<div style="display=flex;justify-content:center;">
+			<h2>Configuración</h2>
+		</div>
+		<paper-input id="id_rep" label="Código Representante"></paper-input>
+		<paper-input id="pwd_rep" label="Contraseña"></paper-input>
+		<div style="display:flex;">
+			<paper-button on-click="conf_guardar">Guardar</paper-button>
+			<paper-button on-click="conf_salir" style="margin-left:20px;">Salir</paper-button>
+		</div>
+	  </paper-dialog>
 
       <!-- Main content -->
       <app-header-layout has-scrolling-region>
@@ -849,6 +866,29 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		this.current_view = 'view_clientes'
 		this.$[this.current_view].removeAttribute("hide");
 		this.$.menu.close()
+	  },
+	  configuracion: function() {
+		//localStorage["prod_data"] = JSON.stringify(prods)*/
+		if (localStorage.getItem("app_conf") !== null)
+		{
+			var conf = JSON.parse(localStorage.getItem("app_conf"))
+			this.$.id_rep.value = conf.id_rep
+			this.$.pwd_rep.value = conf.pwd_rep
+		}
+		this.$.menu.close()
+		this.$.app_settings.open()
+	  },
+	  conf_guardar: function() {
+		var conf = {
+			id_rep: this.$.id_rep.value,
+			pwd_rep: this.$.pwd_rep.value
+		}
+		localStorage["app_conf"] = JSON.stringify(conf)
+				
+		this.$.app_settings.close()
+	  },
+	  conf_salir: function() {
+		this.$.app_settings.close()
 	  },
 	  acerca_de: function() {
 		//this.$.toolbar.style.height = '45px';
