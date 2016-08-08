@@ -127,7 +127,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 			<div style="display:flex;justify-content:space-between">
 				<paper-input type="number" style="width: 80px;padding-top: 0px; margin-top:0px;" on-change="cambiar_renglon" value={{item.unds}} no-label-float></paper-input>
 				<small class="precio" style="margin-left:15px;">Precio: {{item.prc}}</small>
-				<paper-icon-button  id="[[item.id]]" name="[[item.prd]]" icon="cancel" on-click="borrar" style="margin-left:15px;color:red;"></paper-icon-button>
+				<paper-icon-button id="[[item.id]]" name="[[item.prd]]" icon="cancel" on-click="borrar" style="margin-left:15px;color:#D84315;"></paper-icon-button>
 			</div>
 		  </div>
 		</template>
@@ -683,6 +683,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		<hr>
       </app-drawer>
 	  
+	  <!-- App Settings -->
 	  <paper-dialog id="app_settings" modal=true style="width:250px;border-radius:5px;"> 
 		<div style="display=flex;justify-content:center;">
 			<h2>Configuración</h2>
@@ -833,6 +834,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		//this.$.toolbar.style.height = '85px';
 		//console.log('view2')
 		this.$[this.current_view].setAttribute("hide","")
+		this.$.tabs.select(1)
 		this.current_view = 'view2'
 		this.titulo = 'Productos'
 		if (this.$.view2.has_filter())
