@@ -127,7 +127,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 			<div style="display:flex;justify-content:space-between">
 				<paper-input type="number" style="width: 80px;padding-top: 0px; margin-top:0px;" on-change="cambiar_renglon" value={{item.unds}} no-label-float></paper-input>
 				<small class="precio" style="margin-left:15px;">Precio: {{item.prc}}</small>
-				<paper-icon-button id="[[item.id]]" name="[[item.prd]]" icon="cancel" on-click="borrar" style="margin-left:15px;color:#D84315;"></paper-icon-button>
+				<paper-icon-button id="[[item.id]]" name="[[item.prd]]" icon="highlight-off" on-click="borrar" style="margin-left:15px;color:#D84315;"></paper-icon-button>
 			</div>
 		  </div>
 		</template>
@@ -355,13 +355,13 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 	<dom-module id="tab-pedido">
 	  <template>
 		<style>
-			paper-input { margin-left: 12px; 
+			/*paper-input { margin-left: 12px; }
 			paper-button {
 				margin-top: 40px;
 				padding-left: 25px;
 				padding-rigth: 25px;
 				width: 180px;
-			}
+			}*/
 		</style>
 		<iron-ajax id="ajax" method='POST' handle-as="json" on-response="load_data" on-error="ajax_error"></iron-ajax>
 		<h3 style="margin: 25px 0px 0px 15px;"><iron-icon icon="social:person" style="color:purple;margin-right:10px;"></iron-icon>
@@ -378,9 +378,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		<div style="margin-left:40px;color:blue;"> Mas...</div>
 		<h3 style="margin: 25px 15px 0px 15px;"><iron-icon icon="shopping-basket" style="color:#00695C;margin-right:10px;"></iron-icon>Pedido</h3>
 		<div style="display: flex;justify-content:center;">
-		   <paper-input id="sku" value=[[pedido.skus]] label="Productos" style="width: 60px;" readonly></paper-input>
-		   <paper-input id="unds" value=[[pedido.unds]] label="Unidades" style="width: 70px; padding-left:7px;" readonly></paper-input>
-			<paper-input id="mto" value=[[pedido.mto]] label="Total Monto" style="width: 125px; padding-left:7px;" readonly></paper-input>
+		   <paper-input id="sku" type="number" value=[[pedido.skus]] label="Productos" style="width: 60px;" readonly></paper-input>
+		   <paper-input id="unds" type="number" value=[[pedido.unds]] label="Unidades" style="width: 70px; padding-left:7px;" readonly></paper-input>
+			<paper-input id="mto" type="number" value=[[pedido.mto]] label="Total Monto" style="width: 125px; padding-left:7px;" readonly></paper-input>
 		</div>
 		<br>
 		<div style="color:black;display: flex;justify-content:center;">
@@ -421,7 +421,41 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		total_pedido: function(total) {
 			this.pedido = total
 		},
+		validar_pedido: function() {
+			if (this.cliente.id == undefined)
+			{
+				alert('Debe seleccionar un Cliente')
+				return false 
+			}
+			if (this.app_pedido.get_pedido().slice(0).length == 0)
+			{
+				alert('Pedido sin renglones')
+				return false 
+			}
+			return true
+		},
+		guardar_pedido: function() {
+			if (!this.validar_pedido()) return
+				
+			var pedido = {
+				id: this.cliente.id,
+				nombre: this.cliente.nombre,
+				rng: this.app_pedido.get_pedido().slice(0)
+			}
+			for (var atr in this.pedido) { pedido[atr] = this.pedido[atr]; }
+			console.log(pedido)
+			
+			var pdtes = []
+			if (localStorage.getItem("ped_pdtes") !== null)
+				pdtes = JSON.parse(localStorage.getItem("ped_pdtes"))
+			pdtes.push(pedido)
+			localStorage['ped_pdtes'] = JSON.stringify(pdtes)
+			console.log(pdtes)
+			alert('Pedido Guardado')
+			//console.log(this.app_pedido.get_pedido())
+		},
 		enviar_pedido: function() {
+			if (!this.validar_pedido()) return
 			if (this.cliente.id != 0)
 			{
 				this.$.ajax.url = "http://ba43c833.ngrok.io/pedido/crear"
@@ -484,17 +518,14 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 			<!--<paper-fab on-click="get_clientes" mini green icon="autorenew" elevation=3></paper-fab>-->
 		</div>
 		<paper-dialog id="clte_menu" style="width:180px;"> 
-		<!--<paper-menu>-->
 			<div on-click="crear_pedido" style="min-height:20px;line-height:35px;">
-				<iron-icon icon="shopping-basket" style="color:Maroon;"></iron-icon>
+				<iron-icon icon="shopping-basket" style="color:blue;"></iron-icon>
 				<span style="margin-left:5px;">Nuevo Pedido</span>
 			</div>
-			<!--<div on-click="pedidos" style="min-height:20px;line-height:35px;">Pedidos Pendientes</paper-item>-->
 			<div on-click="info_cliente" style="min-height:20px;line-height:35px;">
-				<iron-icon icon="info-outline" style="color:ForestGreen;"></iron-icon>
+				<iron-icon icon="info-outline" style="color:chocolate;"></iron-icon>
 				<span style="margin-left:5px;">Info Cliente</span>
 			</div>
-		<!--</paper-menu>-->
 		</paper-dialog>
 		<template id="mytemplate" is="dom-repeat" items="{{filtered_data}}">
 		  <div class="card">
@@ -585,19 +616,73 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 	
 	<dom-module id="tab-pendientes">
 	  <template>
-		<!--<div style="display:flex;background-color:#33691e;height:35px;"></div>-->
+		<iron-a11y-keys id="a11y" target="[[target]]" keys="enter" on-keys-pressed="filter"></iron-a11y-keys>
 		<div style="display:flex;background-color:#9ccc66;height:5px;"></div>
-		
-		<!--<div style="display:flex;background-color:#33691e;height:35px;"></div>
-		<div style="display:flex;background-color:#9ccc66;height:5px;"></div>-->
-		<div>Pendientes</div>
+		<div style="display:flex;">
+			<paper-input id="ped_src" label="Cliente" style="width:7em;margin-left:7px;" no-label-float></paper-input>
+			<paper-icon-button icon="search" style="color:chocolate;" on-click="filter"></paper-icon-button>
+		</div>
+		<paper-dialog id="ped_menu" style="width:180px;"> 
+			<div on-click="enviar_pedido" style="min-height:20px;line-height:35px;">
+				<iron-icon icon="cloud-upload" style="color:blue;"></iron-icon>
+				<span style="margin-left:5px;">Enviar Pedido</span>
+			</div>
+			<div on-click="ver_pedido" style="min-height:20px;line-height:35px;">
+				<iron-icon icon="shopping-basket" style="color:green;"></iron-icon>
+				<span style="margin-left:5px;">Detalle Pedido</span>
+			</div>
+			<div on-click="borrar_pedido" style="min-height:20px;line-height:35px;">
+				<iron-icon icon="highlight-off" style="color:chocolate;"></iron-icon>
+				<span style="margin-left:5px;">Eliminar</span>
+			</div>
+		</paper-dialog>
+		<template id="mytemplate" is="dom-repeat" items="{{filtered_data}}">
+		  <div class="card">
+			<strong class="desc">[[item.nombre]]</strong>
+			<div style="display:flex; justify-content:space-between">
+				<strong class="existencia">Unds: [[item.unds]]</strong>
+				<small class="precio" style="margin-left:20px;">Monto: [[item.mto]]</small>
+				<paper-icon-button id="{{item.id}}" icon="more-vert" on-click="open_menu" style="color:chocolate;"></paper-icon-button>
+			</div>
+		  </div>
+		</template>
 	  </template>
 	  <script>
 		Polymer({
 
 		is: 'tab-pendientes',
 		ready: function() {
-		
+			this.app_pedido = document.getElementById('app_pedido')
+		},
+		load: function() {
+			if (localStorage.getItem("ped_pdtes") !== null)
+				this.pendientes = JSON.parse(localStorage.getItem("ped_pdtes"))
+			 else
+				this.pendientes = []
+			this.filtered_data = this.pendientes
+			//console.log(this.filtered_data)
+		},
+		filter: function() {
+			this.filtered_data=[]
+			this.$.mytemplate.render()
+			var filtered_d = []
+			for (i=0; i<this.pendientes.length; i++)
+				if (this.pendientes[i].nombre.toLowerCase().indexOf(this.$.ped_src.value.toLowerCase()) > -1)
+					filtered_d.push(this.pendientes[i])
+			/** Load Pedido Info **/
+			this.filtered_data = filtered_d
+			filtered_d = []	
+		},
+		open_menu: function(e) {
+			var id = Number(e.target.domHost.id)
+			for (var i=0; i < this.filtered_data.length; i++)
+			  if (id == this.filtered_data[i].id)
+			  {
+				this.pedido = this.filtered_data[i]
+				i = this.filtered_data.length
+			  }
+			console.log(this.pedido)
+			this.$.ped_menu.open()
 		}
 		})
 	  </script>
@@ -781,6 +866,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 			total.unds += this.pedido[i].unds
 			total.mto += (this.pedido[i].unds * this.pedido[i].prc)
 		}
+		total.mto = Math.round(total.mto * 100) / 100
 		//console.log('total pedido', total)
 		return total
 	  },
@@ -857,6 +943,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		this.$.tabs.setAttribute("hide","")
 		this.$[this.current_view].setAttribute("hide","")
 		this.current_view = 'pendientes'
+		this.$.pendientes.load()
 		this.$[this.current_view].removeAttribute("hide");
 		this.$.menu.close()
 	  },
