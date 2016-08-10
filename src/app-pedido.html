@@ -448,7 +448,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 			var pdtes = []
 			if (localStorage.getItem("ped_pdtes") !== null)
 				pdtes = JSON.parse(localStorage.getItem("ped_pdtes"))
-			pdtes.push(pedido)
+			pdtes.unshift(pedido)
 			localStorage['ped_pdtes'] = JSON.stringify(pdtes)
 			console.log(pdtes)
 			alert('Pedido Guardado')
@@ -681,8 +681,25 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 				this.pedido = this.filtered_data[i]
 				i = this.filtered_data.length
 			  }
-			console.log(this.pedido)
+			//console.log(this.pedido)
 			this.$.ped_menu.open()
+		},
+		enviar_pedido: function() {
+			this.$.ped_menu.close()
+		},
+		ver_pedido: function() {
+			this.$.ped_menu.close()
+		},
+		borrar_pedido: function() {
+			this.$.ped_menu.close()
+			for (var i=0; i <= this.pendientes.length; i++)
+			  if (this.pedido.id == this.pendientes[i].id)
+			  {
+				this.pendientes.splice(i, 1)
+				i= this.pendientes.length
+			  }
+			localStorage['ped_pdtes'] = JSON.stringify(this.pendientes) 
+			this.filter()
 		}
 		})
 	  </script>
@@ -843,7 +860,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 			i = this.pedido.length
 		  }
 		if (index == -1)		
-			this.pedido.push(renglon)
+			this.pedido.unshift(renglon)
 		else
 		{
 			if (renglon.unds != 0)
