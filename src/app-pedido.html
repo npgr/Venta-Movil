@@ -322,7 +322,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 			},
 			get_productos: function() {
 				//this.$.ajax.url = 'http://e0c4cfea.ngrok.io/proddata'
-				this.$.ajax.url = 'http://localhost:3000/proddata'
+				//this.$.ajax.url = 'http://localhost:3000/proddata'
+				this.$.ajax.url = 'http://fvc-ngoncalves:3000/proddata'
 				this.$.ajax.contentType="application/json"
 				this.$.ajax.body = {"my_key": "v3nt4m0v1l.123"}
 				this.msg = 'Cargando...'
@@ -376,7 +377,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		   <paper-input id="dcto" value=[[cliente.dcto_txt]] label="Dcto Comercial" style="width: 90px; padding-left:25px;" readonly></paper-input>
 		</div>
 		<div style="margin-left:40px;color:blue;"> Mas...</div>
-		<h3 style="margin: 25px 15px 0px 15px;"><iron-icon icon="shopping-basket" style="color:#00695C;margin-right:10px;"></iron-icon>Pedido</h3>
+		<h3 style="margin: 25px 15px 0px 15px;"><iron-icon icon="shopping-basket" style="color:#00695C;margin-right:10px;"></iron-icon>
+			Pedido</h3>
 		<div style="display: flex;justify-content:center;">
 		   <paper-input id="sku" type="number" value=[[pedido.skus]] label="Productos" style="width: 60px;" readonly></paper-input>
 		   <paper-input id="unds" type="number" value=[[pedido.unds]] label="Unidades" style="width: 70px; padding-left:7px;" readonly></paper-input>
@@ -384,8 +386,12 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		</div>
 		<br>
 		<div style="color:black;display: flex;justify-content:center;">
-			<paper-button style="padding-left:15px;padding-right:20px;height:35px;" on-click="enviar_pedido"><iron-icon icon="arrow-upward" on-click="full" style="color: black;" size=32></iron-icon>Enviar</paper-button>
-			<paper-button style="margin-left:20px;padding-left:15px;padding-right:20px;height:35px;" on-click="guardar_pedido"><iron-icon icon="arrow-downward" on-click="full" style="color: black;" size=32></iron-icon>Guardar</paper-button>
+			<paper-button style="padding-left:15px;padding-right:20px;height:35px;" on-click="enviar_pedido"><iron-icon icon="arrow-upward" style="color: black;" size=32></iron-icon>Enviar</paper-button>
+			<paper-button style="margin-left:20px;padding-left:15px;padding-right:20px;height:35px;" on-click="guardar_pedido"><iron-icon icon="arrow-downward" style="color: black;" size=32></iron-icon>Guardar</paper-button>
+		</div>
+		<br>
+		<div style="color:black;display: flex;justify-content:center;">
+			<paper-button orange style="padding-left:15px;padding-right:20px;height:35px;" on-click="borrar_pedido"><iron-icon icon="highlight-off" on-click="full" style="color: black;" size=32></iron-icon>Borrar Pedido</paper-button>
 		</div>
 		<h4 style="margin-left:30px;">{{msg}}</h4>
 	  </template>
@@ -418,6 +424,17 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 			cliente.disponible = cliente.credito - cliente.saldo 
 			cliente.dcto_txt = cliente.dcto_cial+' %'
 			this.cliente = cliente
+		},
+		borrar_pedido: function() {
+		  if (this.pedido.skus != 0)
+		  {
+			var r = confirm("Borrar Pedido ?");
+			if (r == true) 
+			{
+				this.app_pedido.set_pedido([])
+				this.pedido = this.app_pedido.total_pedido()
+			}
+		  }
 		},
 		total_pedido: function(total) {
 			this.pedido = total
@@ -563,11 +580,12 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 			filtered_d = []	
 		},
 		get_clientes: function() {
-			this.$.ajax.url = 'https://api.myjson.com/bins/w3lb'
+			//this.$.ajax.url = 'https://api.myjson.com/bins/w3lb'
 			this.$.ajax.method = 'GET'
 			//this.$.ajax.url = 'http://localhost:3000/clientes/zona/16'
+			this.$.ajax.url = 'http://fvc-ngoncalves:3000/clientes/zona/16'
 			this.$.ajax.contentType="application/json"
-			//this.$.ajax.body = {"my_key": "v3nt4m0v1l.123"}
+			this.$.ajax.body = {"my_key": "v3nt4m0v1l.123"}
 			this.msg = 'Cargando...'
 			this.$.ajax.generateRequest()
 		},
