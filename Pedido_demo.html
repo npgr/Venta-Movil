@@ -1,0 +1,63 @@
+<!--
+@license
+Copyright (c) 2016 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+
+  <title>Demo Crear Pedido</title>
+
+  <link rel="shortcut icon" sizes="32x32" href="/images/app-icon-32.png">
+
+  <meta name="theme-color" content="#fff">
+
+  <style>
+
+    body {
+      margin: 0;
+      font-family: 'Roboto', 'Noto', sans-serif;
+      line-height: 1.5;
+      min-height: 100vh;
+      background-color: #eee;
+    }
+
+  </style>
+
+</head>
+<body>
+	<div id="xx" val="Exito"></div>
+	<script>
+		var win = window.open("pedido.html", "_blank", "width=320,height=565,menubar=no,titlebar=no,status=no")
+		
+		setTimeout(function(){ 
+			el = win.document.getElementById('app_pedido')
+			console.log('pedido')
+			el.view1()
+		}, 5000);
+		
+		setTimeout(function(){ 
+			console.log('productos')
+			el.view2()
+		}, 7500);
+		
+		setTimeout(function(){ 
+			console.log('Renglones')
+			el.view3()
+		}, 10000);
+		
+		/** Get Data from window Child **/
+		//var el = window.opener.document.getElementById("xx")
+		//if (el.getAttribute("val")=='Exito')
+		//		alert('Exito')
+	</script>
+</body>
+</html>
