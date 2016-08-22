@@ -1,5 +1,6 @@
 *** MOVIL
 
+- intro con carrusel & slice
 - replace all alert box by paper-dialog
 - calcular descuento comercial del pedido, por renglon
 
