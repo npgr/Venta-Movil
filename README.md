@@ -1,3 +1,27 @@
+# Venta Movil (Web Mobile Sales)
+
+  App made with Polymer
+  
+## Running App
+
+   Serve with your favorite http server, I recommend http-server (node module)
+   
+            npm i http-server -g
+            
+            http-server
+
+    I Recommend use Chrome Browser, open url
+    
+            http://localhost:8080/pedido.html
+            
+
+## Features
+
+    - Create & Send Order
+    - Query Products
+    - Query Customers
+    - Query Saved Orders
+
 # Polymer App Toolbox - Drawer Template
 
 This template is a starting point for building apps using a drawer-based
